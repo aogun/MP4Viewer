@@ -1,0 +1,17 @@
+include_directories(../deps/imgui ../deps/imgui/examples/ ../deps/Bento4/Source/C++/Core
+        ../deps/Bento4/Source/C++/MetaData
+        ../deps/Bento4/Source/C++/Codecs
+        ../deps/Bento4/Source/C++/Crypto
+        ../deps/imgui-filebrowser
+        ../deps/imgui_memory_editor)
+aux_source_directory(. SOURCE_FILES)
+set(SOURCE_FILES ${SOURCE_FILES}
+        ../deps/imgui/imgui.cpp
+        ../deps/imgui/imgui_draw.cpp
+        ../deps/imgui/imgui_demo.cpp
+        ../deps/imgui/imgui_widgets.cpp
+        ../deps/imgui/examples/imgui_impl_dx10.cpp
+        ../deps/imgui/examples/imgui_impl_win32.cpp
+        )
+add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+target_link_libraries(${PROJECT_NAME} D3D10 ap4)
