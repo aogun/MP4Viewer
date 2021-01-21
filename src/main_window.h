@@ -7,7 +7,6 @@
 
 #include "imgui.h"
 #include "mm_log.h"
-#include "imfilebrowser.h"
 #include "mp4_manager.h"
 #include "atom_window.h"
 #include "field_window.h"
@@ -31,6 +30,8 @@ private:
     void ShowMenuFile();
     bool change_font(const char * name);
 
+    bool m_open_log_window = false;
+
     bool m_running = true;
     mp4_manager * m_manager = nullptr;
     atom_window m_atom_window;
@@ -41,6 +42,9 @@ private:
     std::map<std::string, std::string> m_font_path;
     std::string m_current_font;
     std::string m_changed_font;
+
+    bool m_render_fps = false;
+    ImFont * m_fps_font = nullptr;
 
     volatile bool m_needs_rebuild_font = false;
 };

@@ -46,7 +46,7 @@ void atom_window::draw() {
         ImGui::SetNextWindowSizeConstraints(ImVec2(40, size.y - m_top), ImVec2(size.x, size.y - m_top));
         ImGui::Begin(" ", nullptr,
                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar |
-                     ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
                      ImGuiWindowFlags_NoTitleBar);
         ImGui::PopStyleVar(2);
         uint32_t flags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;

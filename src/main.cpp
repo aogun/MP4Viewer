@@ -13,7 +13,8 @@
 #include "mp4_manager.h"
 #include "windows.h"
 #include <sstream>
-#include <shobjidl.h>
+
+#pragma comment(linker,"/subsystem:\"Windows\" /entry:\"mainCRTStartup\"")
 
 // Data
 static ID3D10Device*            g_pd3dDevice = NULL;
@@ -99,12 +100,18 @@ std::string GetSystemFontFile(const char *faceName) {
 }
 
 HWND g_hwnd = nullptr;
+void add_log(const char* fmt, ...);
 // Main code
 int main(int, char**)
 {
+#ifdef _DEBUG
+    mm_log_init(add_log);
+#else
+    mm_log_init(add_log);
+#endif
     setlocale(LC_ALL, "en_US.utf8");
     // Create application window
-    //ImGui_ImplWin32_EnableDpiAwareness();
+    ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("MP4Viewer"), NULL };
     ::RegisterClassEx(&wc);
     HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("MP4Viewer"), WS_OVERLAPPEDWINDOW, 100, 100, 1480, 960, NULL, NULL, wc.hInstance, NULL);

@@ -4,6 +4,154 @@
 
 #include "main_window.h"
 
+struct ExampleAppLog
+{
+    ImGuiTextBuffer     Buf;
+    ImGuiTextFilter     Filter;
+    ImVector<int>       LineOffsets; // Index to lines offset. We maintain this with AddLog() calls.
+    bool                AutoScroll;  // Keep scrolling if already at the bottom.
+    bool                Start;
+    std::vector<std::string> LogBeforeStart;
+
+    ExampleAppLog()
+    {
+        AutoScroll = true;
+        Start = false;
+        Clear();
+    }
+
+    void    Clear()
+    {
+        Buf.clear();
+        LineOffsets.clear();
+        LineOffsets.push_back(0);
+    }
+
+    void    AddLog(const char* fmt, va_list _ArgList)
+    {
+        if (!Start) {
+            static char sz[1024];
+            va_list args;
+            vsnprintf(sz, 1024, fmt, _ArgList);
+            LogBeforeStart.emplace_back(sz);
+            return;
+        }
+        if (!LogBeforeStart.empty()) {
+            for (const auto &s : LogBeforeStart) {
+                Buf.append(s.c_str(), s.c_str() + s.size());
+            }
+            LineOffsets.push_back(LogBeforeStart.size());
+            LogBeforeStart.clear();
+        }
+        int old_size = Buf.size();
+        Buf.appendfv(fmt, _ArgList);
+        for (int new_size = Buf.size(); old_size < new_size; old_size++)
+            if (Buf[old_size] == '\n')
+                LineOffsets.push_back(old_size + 1);
+    }
+
+    void    Draw(const char* title, bool* p_open = NULL)
+    {
+        if (!LogBeforeStart.empty()) {
+            for (const auto &s : LogBeforeStart) {
+                Buf.append(s.c_str(), s.c_str() + s.size());
+            }
+            LineOffsets.push_back(LogBeforeStart.size());
+            LogBeforeStart.clear();
+        }
+        if (!ImGui::Begin(title, p_open))
+        {
+            ImGui::End();
+            return;
+        }
+
+        // Options menu
+        if (ImGui::BeginPopup("Options"))
+        {
+            ImGui::Checkbox("Auto-scroll", &AutoScroll);
+            ImGui::EndPopup();
+        }
+
+        // Main window
+        if (ImGui::Button("Options"))
+            ImGui::OpenPopup("Options");
+        ImGui::SameLine();
+        bool clear = ImGui::Button("Clear");
+        ImGui::SameLine();
+        bool copy = ImGui::Button("Copy");
+        ImGui::SameLine();
+        Filter.Draw("Filter", -100.0f);
+
+        ImGui::Separator();
+        ImGui::BeginChild("scrolling", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+        if (clear)
+            Clear();
+        if (copy)
+            ImGui::LogToClipboard();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+        const char* buf = Buf.begin();
+        const char* buf_end = Buf.end();
+        if (Filter.IsActive())
+        {
+            // In this example we don't use the clipper when Filter is enabled.
+            // This is because we don't have a random access on the result on our filter.
+            // A real application processing logs with ten of thousands of entries may want to store the result of
+            // search/filter.. especially if the filtering function is not trivial (e.g. reg-exp).
+            for (int line_no = 0; line_no < LineOffsets.Size; line_no++)
+            {
+                const char* line_start = buf + LineOffsets[line_no];
+                const char* line_end = (line_no + 1 < LineOffsets.Size) ? (buf + LineOffsets[line_no + 1] - 1) : buf_end;
+                if (Filter.PassFilter(line_start, line_end))
+                    ImGui::TextUnformatted(line_start, line_end);
+            }
+        }
+        else
+        {
+            // The simplest and easy way to display the entire buffer:
+            //   ImGui::TextUnformatted(buf_begin, buf_end);
+            // And it'll just work. TextUnformatted() has specialization for large blob of text and will fast-forward
+            // to skip non-visible lines. Here we instead demonstrate using the clipper to only process lines that are
+            // within the visible area.
+            // If you have tens of thousands of items and their processing cost is non-negligible, coarse clipping them
+            // on your side is recommended. Using ImGuiListClipper requires
+            // - A) random access into your data
+            // - B) items all being the  same height,
+            // both of which we can handle since we an array pointing to the beginning of each line of text.
+            // When using the filter (in the block of code above) we don't have random access into the data to display
+            // anymore, which is why we don't use the clipper. Storing or skimming through the search result would make
+            // it possible (and would be recommended if you want to search through tens of thousands of entries).
+            ImGuiListClipper clipper;
+            clipper.Begin(LineOffsets.Size);
+            while (clipper.Step())
+            {
+                for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd; line_no++)
+                {
+                    const char* line_start = buf + LineOffsets[line_no];
+                    const char* line_end = (line_no + 1 < LineOffsets.Size) ? (buf + LineOffsets[line_no + 1] - 1) : buf_end;
+                    ImGui::TextUnformatted(line_start, line_end);
+                }
+            }
+            clipper.End();
+        }
+        ImGui::PopStyleVar();
+
+        if (AutoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+            ImGui::SetScrollHereY(1.0f);
+
+        ImGui::EndChild();
+        ImGui::End();
+    }
+};
+static ExampleAppLog m_log;
+void add_log(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    m_log.AddLog(fmt, args);
+    va_end(args);
+}
+
 
 main_window::main_window(mp4_manager* manager) :
     m_manager(manager), m_atom_window(manager), m_field_window(manager), m_mem_window(manager) {
@@ -52,6 +200,8 @@ void main_window::draw() {
             if (ImGui::BeginMenu("windows")) {
                 ImGui::MenuItem("Detail", nullptr, &m_manager->m_open_field_window);
                 ImGui::MenuItem("Hex view", nullptr, &m_manager->m_open_mem_window);
+                ImGui::MenuItem("Log", nullptr, &m_open_log_window);
+                ImGui::MenuItem("FPS", nullptr, &m_render_fps);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Theme"))
@@ -120,18 +270,18 @@ void main_window::draw() {
     auto &io = ImGui::GetIO();
     auto size = io.DisplaySize;
 
-    ImGui::SetNextWindowPos(ImVec2(0, menu_size.y));
-    ImGui::SetNextWindowSize(ImVec2(size.x, size.y - menu_size.y));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::Begin("MP4Viewer", &open,
-                 ImGuiWindowFlags_NoResize |
-                 ImGuiWindowFlags_NoTitleBar |
-                 ImGuiWindowFlags_NoScrollbar |
-                 ImGuiWindowFlags_NoBringToFrontOnFocus |
-                 ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::PopStyleVar(3);
+//    ImGui::SetNextWindowPos(ImVec2(0, menu_size.y));
+//    ImGui::SetNextWindowSize(ImVec2(size.x, size.y - menu_size.y));
+//    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.);
+//    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.);
+//    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+//    ImGui::Begin("MP4Viewer", &open,
+//                 ImGuiWindowFlags_NoResize |
+//                 ImGuiWindowFlags_NoTitleBar |
+//                 ImGuiWindowFlags_NoScrollbar |
+//                 ImGuiWindowFlags_NoBringToFrontOnFocus |
+//                 ImGuiWindowFlags_AlwaysAutoResize);
+//    ImGui::PopStyleVar(3);
 
 //    m_file_dialog.Display();
 //    if(m_file_dialog.HasSelected())
@@ -140,7 +290,7 @@ void main_window::draw() {
 //        m_manager->open(m_file_dialog.GetSelected().string().c_str());
 //        m_file_dialog.ClearSelected();
 //    }
-    ImGui::End();
+//    ImGui::End();
 
     if (m_dialog_window.is_selected()) {
         m_manager->open(m_dialog_window.get_path());
@@ -178,6 +328,29 @@ void main_window::draw() {
     m_field_window.set_top(menu_size.y);
     m_field_window.draw();
 
+    if (m_open_log_window) {
+        ImGui::SetNextWindowSize(ImVec2(size.x, 400), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(0, size.y - 400), ImGuiCond_FirstUseEver);
+        m_log.Draw("Log", &m_open_log_window);
+    }
+    if (m_render_fps) {
+        ImGui::SetNextWindowPos(ImVec2(size.x - 80, 20.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::Begin("fps", nullptr, ImGuiWindowFlags_NoTitleBar |
+                                     ImGuiWindowFlags_NoResize |
+                                     ImGuiWindowFlags_NoScrollbar |
+                                     ImGuiWindowFlags_AlwaysAutoResize |
+                                     ImGuiWindowFlags_NoBackground |
+                                     ImGuiWindowFlags_NoFocusOnAppearing |
+                                     ImGuiWindowFlags_NoNav);
+        ImGui::PopStyleVar(3);
+        ImGui::PushFont(m_fps_font);
+        ImGui::TextColored((ImVec4) ImColor(0, 0xff, 0, 0xff), "%.1f", ImGui::GetIO().Framerate);
+        ImGui::PopFont();
+        ImGui::End();
+    }
 }
 
 bool main_window::is_running() {
@@ -192,6 +365,14 @@ bool main_window::init() {
     io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsLight();
     io.IniFilename = nullptr;
+
+    ImFontConfig config;
+    config.SizePixels = 30;
+    m_fps_font = io.Fonts->AddFontDefault(&config);
+    if (m_fps_font == nullptr) {
+        MM_LOG_ERROR("load fps font failed");
+        return false;
+    }
     return false;
 }
 
@@ -244,6 +425,7 @@ bool main_window::change_font(const char *name) {
 }
 
 void main_window::before_draw() {
+    if (!m_log.Start) m_log.Start = true;
     if (!m_changed_font.empty()) {
         change_font(m_changed_font.c_str());
         m_changed_font.clear();

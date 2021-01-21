@@ -53,7 +53,8 @@ void mem_window::draw() {
         if (m_highlight_size > 0) {
 
             ImGui::SetNextWindowPos(ImVec2(800, m_top), ImGuiCond_FirstUseEver);
-            m_editor.DrawWindow(m_title, m_buffer, m_size, m_buffer_offset, &m_manager->m_open_mem_window, m_font);
+            m_editor.DrawWindow(m_title, m_buffer, m_size, m_buffer_offset, &m_manager->m_open_mem_window,
+                                m_font, ImGuiWindowFlags_NoBringToFrontOnFocus);
             if (m_editor.HighlightMin != m_highlight_offset - m_buffer_offset) {
                 m_editor.GotoAddrAndHighlight(m_highlight_offset - m_buffer_offset,
                                               m_highlight_offset - m_buffer_offset + m_highlight_size);

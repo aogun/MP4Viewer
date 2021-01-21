@@ -80,6 +80,7 @@ void field_window::draw() {
             ImGui::SetNextWindowSize(ImVec2(400, size.y - m_top), ImGuiCond_FirstUseEver);
             ImGui::SetNextWindowSizeConstraints(ImVec2(40, size.y - m_top), ImVec2(size.x, size.y - m_top));
             ImGui::Begin("Detail Window", &m_manager->m_open_field_window, ImGuiWindowFlags_NoCollapse |
+                                                                    ImGuiWindowFlags_NoBringToFrontOnFocus |
                                                                    ImGuiWindowFlags_HorizontalScrollbar);
 
             float x_padding = ImGui::GetStyle().WindowPadding.x;

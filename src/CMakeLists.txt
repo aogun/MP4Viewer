@@ -2,8 +2,7 @@ include_directories(../deps/imgui ../deps/imgui/examples/ ../deps/Bento4/Source/
         ../deps/Bento4/Source/C++/MetaData
         ../deps/Bento4/Source/C++/Codecs
         ../deps/Bento4/Source/C++/Crypto
-        ../deps/imgui-filebrowser
-        ../deps/imgui_memory_editor)
+        ../deps/imgui_club/imgui_memory_editor)
 aux_source_directory(. SOURCE_FILES)
 set(SOURCE_FILES ${SOURCE_FILES}
         ../deps/imgui/imgui.cpp

@@ -11,6 +11,7 @@
 
 
 #define LOG_SIZE 1024
+static output_func m_func = nullptr;
 
 inline std::tm localtime(std::time_t const & time) {
     std::tm tm_snapshot;
@@ -24,11 +25,12 @@ inline std::tm localtime(std::time_t const & time) {
     return tm_snapshot;
 }
 
-void mm_log_init() {
+void mm_log_init(output_func func) {
 #ifdef USE_SPDLOG
 #else
     setbuf(stdout, NULL);
 #endif
+    m_func = func;
 }
 
 const char * strip_file_name(const char *filename) {
@@ -59,6 +61,10 @@ void mm_log_info(const char * format, const char * file, int line, const char * 
     char buffer[20];
     sprintf(buffer, "%02d-%02d %02d:%02d:%02d.%03d",
             lt.tm_mon+1, lt.tm_mday, lt.tm_hour, lt.tm_min, lt.tm_sec, tb.millitm);
+    if (m_func) {
+        m_func("[%s] [info] [%s:%d] %s\n", buffer, strip_file_name(file), line, sz);
+    }
+
     printf("[%s] [info] [%s:%d] %s\n", buffer, strip_file_name(file), line, sz);
 #endif
 }
@@ -80,7 +86,12 @@ void mm_log_warn(const char * format, const char * file, int line, const char * 
     char buffer[20];
     sprintf(buffer, "%02d-%02d %02d:%02d:%02d.%03d",
             lt.tm_mon+1, lt.tm_mday, lt.tm_hour, lt.tm_min, lt.tm_sec, tb.millitm);
+    if (m_func) {
+        m_func("[%s] [warn] [%s:%d] %s\n", buffer, strip_file_name(file), line, sz);
+    }
+
     printf("[%s] [warn] [%s:%d] %s\n", buffer, strip_file_name(file), line, sz);
+
 #endif
 }
 void mm_log_error(const char * format, const char * file, int line, const char * func, ...) {
@@ -101,6 +112,11 @@ void mm_log_error(const char * format, const char * file, int line, const char *
     char buffer[20];
     sprintf(buffer, "%02d-%02d %02d:%02d:%02d.%03d",
             lt.tm_mon+1, lt.tm_mday, lt.tm_hour, lt.tm_min, lt.tm_sec, tb.millitm);
+    if (m_func) {
+        m_func("[%s] [error] [%s:%d] %s\n", buffer, strip_file_name(file), line, sz);
+    }
+
     printf("[%s] [error] [%s:%d] %s\n", buffer, strip_file_name(file), line, sz);
+
 #endif
 }
