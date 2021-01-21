@@ -16,25 +16,33 @@
 
 class main_window {
 public:
-    explicit main_window(mp4_manager* manager, const char * font_path = nullptr);
+    explicit main_window(mp4_manager* manager);
 
     bool init();
     void draw();
+    void before_draw();
 
     bool is_running();
 
+    void add_font(const char * name, const char * path);
+
+    bool needs_rebuild_font();
 private:
     void ShowMenuFile();
+    bool change_font(const char * name);
 
-//    ImGui::FileBrowser m_file_dialog;
     bool m_running = true;
     mp4_manager * m_manager = nullptr;
-    std::string m_font_path;
     atom_window m_atom_window;
     field_window m_field_window;
     mem_window m_mem_window;
     dialog_window m_dialog_window;
-//    MemoryEditor m_mem_edit;
+    std::map<std::string, ImFont *> m_fonts;
+    std::map<std::string, std::string> m_font_path;
+    std::string m_current_font;
+    std::string m_changed_font;
+
+    volatile bool m_needs_rebuild_font = false;
 };
 
 

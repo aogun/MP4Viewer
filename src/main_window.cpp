@@ -5,9 +5,9 @@
 #include "main_window.h"
 
 
-main_window::main_window(mp4_manager* manager, const char * font_path) :
+main_window::main_window(mp4_manager* manager) :
     m_manager(manager), m_atom_window(manager), m_field_window(manager), m_mem_window(manager) {
-    if (font_path) m_font_path = font_path;
+    m_font_path["default"] = "";
 }
 
 
@@ -15,8 +15,11 @@ void main_window::ShowMenuFile()
 {
     if (ImGui::MenuItem("Open", "Ctrl+O")) {
         MM_LOG_INFO("open file dialog");
-//        m_file_dialog.Open();
         m_dialog_window.open_dialog();
+    }
+    if (ImGui::MenuItem("Save", "Ctrl+S", false, m_mem_window.m_modified)) {
+        MM_LOG_INFO("save file");
+        m_mem_window.save();
     }
     if (m_manager->current()) {
         char sz[128];
@@ -46,28 +49,41 @@ void main_window::draw() {
         }
         if (ImGui::BeginMenu("View"))
         {
-            ImGui::MenuItem("Detail window", nullptr, &m_manager->m_open_field_window);
-            ImGui::MenuItem("Hex view window", nullptr, &m_manager->m_open_mem_window);
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Theme"))
-        {
-            static int style = 0;
-            bool selected;
-            style == 0 ? selected = true : selected = false;
-            if (ImGui::MenuItem("Light", nullptr, selected)) {
-                ImGui::StyleColorsLight();
-                style = 0;
+            if (ImGui::BeginMenu("windows")) {
+                ImGui::MenuItem("Detail", nullptr, &m_manager->m_open_field_window);
+                ImGui::MenuItem("Hex view", nullptr, &m_manager->m_open_mem_window);
+                ImGui::EndMenu();
             }
-            style == 1 ? selected = true : selected = false;
-            if (ImGui::MenuItem("Dark", nullptr, selected)) {
-                ImGui::StyleColorsDark();
-                style = 1;
+            if (ImGui::BeginMenu("Theme"))
+            {
+                static int style = 0;
+                bool selected;
+                style == 0 ? selected = true : selected = false;
+                if (ImGui::MenuItem("Light", nullptr, selected)) {
+                    ImGui::StyleColorsLight();
+                    style = 0;
+                }
+                style == 1 ? selected = true : selected = false;
+                if (ImGui::MenuItem("Dark", nullptr, selected)) {
+                    ImGui::StyleColorsDark();
+                    style = 1;
+                }
+                style == 2 ? selected = true : selected = false;
+                if (ImGui::MenuItem("Classic", nullptr, selected)) {
+                    ImGui::StyleColorsClassic();
+                    style = 2;
+                }
+                ImGui::EndMenu();
             }
-            style == 2 ? selected = true : selected = false;
-            if (ImGui::MenuItem("Classic", nullptr, selected)) {
-                ImGui::StyleColorsClassic();
-                style = 2;
+            if (ImGui::BeginMenu("Fonts"))
+            {
+                for (const auto &iter : m_font_path) {
+                    bool selected = iter.first == m_current_font;
+                    if (ImGui::MenuItem(iter.first.c_str(), nullptr, selected)) {
+                        m_changed_font = iter.first;
+                    }
+                }
+                ImGui::EndMenu();
             }
             ImGui::EndMenu();
         }
@@ -141,7 +157,13 @@ void main_window::draw() {
             MM_LOG_INFO("close current file");
             m_manager->close_current();
         }
-        if (ImGui::IsKeyPressed(ImGuiKey_Tab)) {
+        if (ImGui::IsKeyPressed('S')) {
+            if (m_mem_window.m_modified) {
+                MM_LOG_INFO("save current file");
+                m_mem_window.save();
+            }
+        }
+        if (ImGui::IsKeyPressed('\t')) {
             MM_LOG_INFO("switch to next");
             m_manager->switch_next();
         }
@@ -164,15 +186,75 @@ bool main_window::is_running() {
 
 bool main_window::init() {
     ImGuiIO& io = ImGui::GetIO();
-    if (!m_font_path.empty()) {
-        auto font = io.Fonts->AddFontFromFileTTF(m_font_path.c_str(), 18,
-                                     nullptr, io.Fonts->GetGlyphRangesDefault());
-        if (font == nullptr) {
-            MM_LOG_ERROR("load font %s failed", m_font_path.c_str());
-        }
-    }
+
+    change_font("default");
+    m_mem_window.set_font(m_fonts["default"]);
     io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsLight();
     io.IniFilename = nullptr;
     return false;
 }
+
+void main_window::add_font(const char *name, const char *path) {
+    m_font_path[name] = path;
+}
+
+bool main_window::change_font(const char *name) {
+    ImGuiIO& io = ImGui::GetIO();
+    auto iter = m_fonts.find(name);
+    if (iter != m_fonts.end()) {
+        io.FontDefault = iter->second;
+        m_current_font = name;
+        return true;
+    }
+    auto path_iter = m_font_path.find(name);
+    if (path_iter == m_font_path.end()) {
+        MM_LOG_ERROR("font %s not found", name);
+        return false;
+    }
+    if (path_iter->first == "default") {
+        auto font = io.Fonts->AddFontDefault();
+        if (font == nullptr) {
+            MM_LOG_ERROR("load default font failed");
+            return false;
+        }
+        m_fonts[name] = font;
+        io.FontDefault = font;
+        m_current_font = name;
+        return true;
+    }
+    auto path = path_iter->second;
+    if (path.empty()) {
+        MM_LOG_ERROR("font %s path empty", name);
+        return false;
+    }
+    MM_LOG_ERROR("try to load font from %s", path.c_str());
+    auto font = io.Fonts->AddFontFromFileTTF(path.c_str(), 16,
+                                 nullptr, io.Fonts->GetGlyphRangesChineseFull());
+    if (font == nullptr) {
+        MM_LOG_ERROR("load font %s failed", path.c_str());
+        return false;
+    }
+
+    m_fonts[name] = font;
+    io.FontDefault = font;
+    m_current_font = name;
+    m_needs_rebuild_font = true;
+    return true;
+}
+
+void main_window::before_draw() {
+    if (!m_changed_font.empty()) {
+        change_font(m_changed_font.c_str());
+        m_changed_font.clear();
+    }
+}
+
+bool main_window::needs_rebuild_font() {
+    if (m_needs_rebuild_font) {
+        m_needs_rebuild_font = false;
+        return true;
+    }
+    return false;
+}
+

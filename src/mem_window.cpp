@@ -4,9 +4,23 @@
 
 #include "mem_window.h"
 
+static mem_window * m_mem_window = nullptr;
+
+void write_cb(ImU8* mem_data, size_t addr, ImU8 data_input_value) {
+    if (m_mem_window) {
+        m_mem_window->write_cb(mem_data, addr, data_input_value);
+    }
+}
+
 mem_window::mem_window(mp4_manager *manager) {
     m_manager = manager;
+    m_editor.OptGreyOutZeroes = false;
+    m_editor.ReadOnly = false;
     m_editor.HighlightColor = IM_COL32(0, 0, 255, 50);
+    m_editor.WriteFn = ::write_cb;
+
+    strcpy_s(m_title, "Hex View###");
+    m_mem_window = this;
 }
 
 void mem_window::set_top(uint32_t top) {
@@ -26,17 +40,20 @@ void mem_window::draw() {
     }
     check_data();
 
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.);
     if (!m_error.empty()) {
         ImGui::SetNextWindowPos(ImVec2(800, m_top), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin("Hex View", &m_manager->m_open_mem_window, ImGuiWindowFlags_NoScrollbar))
+        if (ImGui::Begin(m_title, &m_manager->m_open_mem_window, ImGuiWindowFlags_NoScrollbar))
         {
             ImGui::TextColored((ImVec4)(ImColor(255, 0, 0)), "%s", m_error.c_str());
         }
         ImGui::End();
     } else {
         if (m_highlight_size > 0) {
+
             ImGui::SetNextWindowPos(ImVec2(800, m_top), ImGuiCond_FirstUseEver);
-            m_editor.DrawWindow("Hex View", m_buffer, m_size, m_buffer_offset, &m_manager->m_open_mem_window);
+            m_editor.DrawWindow(m_title, m_buffer, m_size, m_buffer_offset, &m_manager->m_open_mem_window, m_font);
             if (m_editor.HighlightMin != m_highlight_offset - m_buffer_offset) {
                 m_editor.GotoAddrAndHighlight(m_highlight_offset - m_buffer_offset,
                                               m_highlight_offset - m_buffer_offset + m_highlight_size);
@@ -45,6 +62,7 @@ void mem_window::draw() {
             }
         }
     }
+    ImGui::PopStyleVar(2);
 
 }
 
@@ -64,6 +82,8 @@ void mem_window::check_data() {
         m_size = 0;
         m_buffer_offset = 0;
         m_current_file.reset();
+
+        strcpy_s(m_title, "Hex View###");
         return;
     }
 
@@ -102,11 +122,17 @@ void mem_window::check_data() {
             m_size = 0;
             m_buffer_offset = 0;
             m_current_file = f;
+
+            snprintf(m_title, sizeof(m_title), "Hex View - [%s]###", f->get_short_name());
         }
     } while (false);
 
 
     if (reload) {
+        if (m_modified) {
+            m_modified = false;
+            snprintf(m_title, sizeof(m_title), "Hex View - [%s]###", f->get_short_name());
+        }
         if (!m_buffer) {
             m_buffer = new char[MAX_BUFFER_ALLOC_SIZE];
         }
@@ -117,7 +143,7 @@ void mem_window::check_data() {
         if (handle) {
             _fseeki64(handle, 0, SEEK_END);
             auto left = _ftelli64(handle);
-            m_buffer_offset = offset > 128 ? offset - 128 : 0;
+            m_buffer_offset = offset > 2048 ? offset - 2048 : 0;
             left -= m_buffer_offset;
             m_size = left > MAX_BUFFER_ALLOC_SIZE ? MAX_BUFFER_ALLOC_SIZE : left;
 
@@ -141,4 +167,55 @@ void mem_window::check_data() {
         }
     }
 
+}
+
+void mem_window::write_cb(ImU8 *mem_data, size_t addr, ImU8 data_input_value) {
+    if (!m_modified) {
+        m_modified_range.begin = m_modified_range.end = -1;
+        auto f = m_manager->current();
+        if (f)
+            snprintf(m_title, sizeof(m_title), "Hex View - [%s] *###", f->get_short_name());
+    }
+    m_modified = true;
+    mem_data[addr] = (ImU8)data_input_value;
+    m_buffer[addr] = (ImU8)data_input_value;
+    MM_LOG_INFO("edit addr %d to %d", addr, data_input_value);
+
+    if (m_modified_range.begin == -1) {
+        m_modified_range.begin = addr;
+        m_modified_range.end = addr + 1;
+    } else {
+        if (addr < m_modified_range.begin) m_modified_range.begin = addr;
+        if (m_modified_range.end < addr + 1) m_modified_range.end = addr + 1;
+    }
+    MM_LOG_INFO("m_modified_range %u to %u, base:%llu", m_modified_range.begin, m_modified_range.end,
+                m_buffer_offset);
+}
+
+void mem_window::save() {
+    if (!m_modified) return;
+
+    auto f = m_manager->current();
+    if (!f) {
+        MM_LOG_WARN("no current file to save");
+        return;
+    }
+    FILE * handle = fopen(f->get_name(), "rb+");
+    if (!handle) {
+        MM_LOG_ERROR("open file %s failed", f->get_name());
+        return;
+    }
+    _fseeki64(handle, m_buffer_offset + m_modified_range.begin, SEEK_SET);
+
+    MM_LOG_INFO("save offset from %llu to %llu", m_buffer_offset + m_modified_range.begin,
+                m_buffer_offset + m_modified_range.end);
+    auto len = fwrite(m_buffer + m_modified_range.begin, 1,
+           m_modified_range.end - m_modified_range.begin, handle);
+    if (len < m_modified_range.end - m_modified_range.begin) {
+        MM_LOG_ERROR("write file failed");
+    }
+    fclose(handle);
+    m_modified = false;
+    m_modified_range.begin = m_modified_range.end = -1;
+    snprintf(m_title, sizeof(m_title), "Hex View - [%s]###", f->get_short_name());
 }

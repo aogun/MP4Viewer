@@ -1,7 +1,7 @@
 MP4Viewer
 ====
 
-### 后续功能点
-- 文件变更检测并提示是否重加载
-- 视频帧选择并可进行画面预览
+### plans
+- file change check and reload
+- video frame preview
 - 

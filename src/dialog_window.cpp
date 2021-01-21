@@ -37,7 +37,12 @@ void dialog_window::open() {
 
         if (SUCCEEDED(hr))
         {
-            hr = pFileOpen->SetDefaultExtension(L"mp4;mov,m4a,fmp4");
+            COMDLG_FILTERSPEC fileTypes[] =
+                    {
+                            { L"All supported video files", L"*.mp4;*.mov;*.m4a;*.fmp4" },
+                            { L"All files", L"*.*" },
+                    };
+            hr = pFileOpen->SetFileTypes(ARRAYSIZE(fileTypes), fileTypes);
             // Show the Open dialog box.
             hr = pFileOpen->Show(g_hwnd);
 

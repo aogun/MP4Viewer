@@ -114,7 +114,7 @@ atom_fields::atom_fields(const char *name, const uint8_t *value, uint32_t size) 
     left -= len;
     p += len;
     for (int i = 0; i < size; i ++) {
-        len = snprintf(p, left, " %02x", value[i]);
+        len = snprintf(p, left, i == 0 ? "%02x" : " %02x", value[i]);
         left -= len;
         p += len;
         if (left == 0) {

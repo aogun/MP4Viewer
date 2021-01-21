@@ -98,55 +98,6 @@ std::string GetSystemFontFile(const char *faceName) {
     return std::string(wsFontFile.begin(), wsFontFile.end());
 }
 
-const char * open_file_dialog() {
-    static char chPath[1024] = { 0 };
-    bool open = false;
-    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED |
-                                      COINIT_DISABLE_OLE1DDE);
-    if (SUCCEEDED(hr))
-    {
-        IFileOpenDialog *pFileOpen;
-
-        // Create the FileOpenDialog object.
-        hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
-                              IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
-
-        if (SUCCEEDED(hr))
-        {
-            hr = pFileOpen->SetDefaultExtension(L"mp4;mov,m4a,fmp4");
-            // Show the Open dialog box.
-            hr = pFileOpen->Show(NULL);
-
-            // Get the file name from the dialog box.
-            if (SUCCEEDED(hr))
-            {
-                IShellItem *pItem;
-                hr = pFileOpen->GetResult(&pItem);
-                if (SUCCEEDED(hr))
-                {
-                    PWSTR pszFilePath;
-                    hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
-
-                    // Display the file name to the user.
-                    if (SUCCEEDED(hr))
-                    {
-//                        MessageBoxW(NULL, pszFilePath, L"File Path", MB_OK);
-                        wcstombs(chPath, pszFilePath, 1024);
-                        MM_LOG_INFO("open file %s", chPath);
-                        open = true;
-                        CoTaskMemFree(pszFilePath);
-                    }
-                    pItem->Release();
-                }
-            }
-            pFileOpen->Release();
-        }
-        CoUninitialize();
-    }
-    if (!open) return nullptr;
-    return chPath;
-}
-
 HWND g_hwnd = nullptr;
 // Main code
 int main(int, char**)
@@ -166,17 +117,23 @@ int main(int, char**)
         ::UnregisterClass(wc.lpszClassName, wc.hInstance);
         return 1;
     }
-    auto path = GetSystemFontFile("Microsoft YaHei");
-    MM_LOG_INFO("font path:%s", path.c_str());
     mp4_manager manager;
-    main_window window(&manager, path.c_str());
+    main_window window(&manager);
     std::shared_ptr<mp4_file> current;
+    const char * fonts[] = {"Microsoft YaHei", "Arial (TrueType)"};
+    for (int i = 0; i < sizeof(fonts)/ sizeof(char*); i ++) {
+        auto path = GetSystemFontFile(fonts[i]);
+        if (!path.empty()) {
+            MM_LOG_INFO("add font %s path %s", fonts[i], path.c_str());
+            window.add_font(fonts[i], path.c_str());
+        } else {
+            MM_LOG_WARN("can't find font %s", fonts[i]);
+        }
+    }
 
     // Show the window
     ::ShowWindow(hwnd, SW_SHOWDEFAULT);
     ::UpdateWindow(hwnd);
-
-    manager.open("E:\\sample1.mp4");
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -219,10 +176,17 @@ int main(int, char**)
             if (!current) {
                 ::SetWindowTextA(hwnd, "MP4Viewer");
             } else {
-                static char sz[1024];
-                snprintf(sz, 1024, "MP4Viewer - [%s]", current->get_name());
-                ::SetWindowTextA(hwnd, sz);
+                static wchar_t title[1024];
+                static wchar_t sz_path[1024];
+                mbstowcs(sz_path, current->get_name(), 1024);
+                _snwprintf(title, 1024, L"MP4Viewer - [%s]", sz_path);
+                ::SetWindowTextW(hwnd, title);
             }
+        }
+        window.before_draw();
+        if (window.needs_rebuild_font()) {
+            io.Fonts->Build();
+            ImGui_ImplDX10_InvalidateDeviceObjects();
         }
 
         // Start the Dear ImGui frame

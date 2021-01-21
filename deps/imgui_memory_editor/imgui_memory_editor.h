@@ -181,7 +181,7 @@ struct MemoryEditor
     }
 
     // Standalone Memory Editor window
-    void DrawWindow(const char* title, void* mem_data, size_t mem_size, size_t base_display_addr = 0x0000, bool * open = nullptr)
+    void DrawWindow(const char* title, void* mem_data, size_t mem_size, size_t base_display_addr = 0x0000, bool * open = nullptr, ImFont * font = nullptr)
     {
         Sizes s;
         CalcSizes(s, mem_size, base_display_addr);
@@ -192,7 +192,13 @@ struct MemoryEditor
         {
             if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
                 ImGui::OpenPopup("context");
+            if (font) {
+                ImGui::PushFont(font);
+            }
             DrawContents(mem_data, mem_size, base_display_addr);
+            if (font) {
+                ImGui::PopFont();
+            }
             if (ContentsWidthChanged)
             {
                 CalcSizes(s, mem_size, base_display_addr);
@@ -306,8 +312,7 @@ struct MemoryEditor
                     }
                     draw_list->AddRectFilled(pos, ImVec2(pos.x + highlight_width, pos.y + s.LineHeight), HighlightColor);
                 }
-
-                if (DataEditingAddr == addr)
+                if (DataEditingAddr == addr && data_editing_addr_next == (size_t)-1)
                 {
                     // Display text input on current byte
                     bool data_write = false;

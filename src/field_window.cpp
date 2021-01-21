@@ -60,7 +60,7 @@ void field_window::draw() {
     if (!m_manager->m_open_field_window) {
         return;
     }
-    static float text_height = ImGui::CalcTextSize("").y;
+    float text_height = ImGui::CalcTextSize("").y;
     auto &io = ImGui::GetIO();
     auto file = m_manager->current();
     do {

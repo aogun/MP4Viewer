@@ -13,6 +13,11 @@
 
 #define MAX_BUFFER_ALLOC_SIZE   32 * 1024 * 1024
 
+typedef struct {
+    int32_t begin;
+    int32_t end;
+} mem_range;
+
 class mem_window {
 public:
     explicit mem_window(mp4_manager * manager);
@@ -21,7 +26,12 @@ public:
 
     void set_top(uint32_t top);
     virtual void draw();
+    void write_cb(ImU8* mem_data, size_t addr, ImU8 data_input_value);
 
+    void save();
+
+    volatile bool m_modified = false;
+    void set_font(ImFont * font) { m_font = font; }
 private:
     void check_data();
 
@@ -38,6 +48,10 @@ private:
     uint64_t m_highlight_offset = 0;
     uint32_t m_highlight_size = 0;
     std::string m_error;
+    char m_title[128];
+
+    mem_range m_modified_range;
+    ImFont * m_font = nullptr;
 };
 
 
