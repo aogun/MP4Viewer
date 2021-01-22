@@ -1,7 +1,7 @@
 MP4Viewer
 ====
 [![Build Status](https://github.com/aogun/MP4Viewer/workflows/build/badge.svg)](https://github.com/aogun/MP4Viewer/actions?workflow=build)
-[![GitHub license](https://img.shields.io/github/license/aogun/MP4Viewer.svg)](https://github.com/aogun/MP4Viewer/blob/master/LICENSE.txt)
+[![GitHub license](https://img.shields.io/github/license/aogun/MP4Viewer.svg)](https://github.com/aogun/MP4Viewer/blob/master/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/aogun/MP4Viewer/all.svg)](https://github.com/aogun/MP4Viewer/releases)
 
 ### About  

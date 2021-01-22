@@ -44,9 +44,9 @@ include_directories(
 )
 
 # Apps
-file(GLOB BENTO4_APPS RELATIVE ${SOURCE_ROOT}/Apps ${SOURCE_ROOT}/Apps/*)
-foreach(app ${BENTO4_APPS})
-  string(TOLOWER ${app} binary_name)
-  add_executable(${binary_name} ${SOURCE_ROOT}/Apps/${app}/${app}.cpp)
-  target_link_libraries(${binary_name} ap4)
-endforeach()
+#file(GLOB BENTO4_APPS RELATIVE ${SOURCE_ROOT}/Apps ${SOURCE_ROOT}/Apps/*)
+#foreach(app ${BENTO4_APPS})
+#  string(TOLOWER ${app} binary_name)
+#  add_executable(${binary_name} ${SOURCE_ROOT}/Apps/${app}/${app}.cpp)
+#  target_link_libraries(${binary_name} ap4)
+#endforeach()
