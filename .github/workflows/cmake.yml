@@ -1,6 +1,12 @@
 name: build
 
-on: [push]
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - 'docs'
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -39,5 +45,15 @@ jobs:
         working-directory: ${{github.workspace}}/build
         shell: bash
         # Execute the build.  You can specify a specific target with "--target <NAME>"
-        run: cmake --build . --config $BUILD_TYPE
+        run: cmake --build . --target MP4Viewer --config $BUILD_TYPE
+      
+      - name: Pack
+        working-directory: build
+        shell: pwsh
+        run: cmake --build . --target package
 
+      - name: Artifact Upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: Windows-artifact
+          path: ${{ github.workspace }}/build/*.zip
