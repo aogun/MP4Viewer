@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(MP4Viewer VERSION 0.1.1)
+project(MP4Viewer VERSION 0.1.2)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -20,6 +20,7 @@ if(WIN32)
     # Include all dynamically linked runtime libraries such as MSVCRxxx.dll
     include(InstallRequiredSystemLibraries)
     set(CPACK_PACKAGE_FILE_NAME ${PROJECT_NAME}-${PROJECT_VERSION})
+    set(CPACK_GENERATOR ZIP)
 endif()
 
 include(CPack)
