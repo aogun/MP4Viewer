@@ -50,7 +50,7 @@ jobs:
       - name: Pack
         working-directory: build
         shell: pwsh
-        run: cmake --build . --target package
+        run: cmake --build . --target package --config $BUILD_TYPE
 
       - name: Artifact Upload
         uses: actions/upload-artifact@v2
