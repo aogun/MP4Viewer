@@ -23,3 +23,6 @@ This program uses the following external opensource project.
 - Bento4(https://github.com/axiomatic-systems/Bento4)
 - ImGui(https://github.com/ocornut/imgui)
 - imgui_club(https://github.com/ocornut/imgui_club)
+
+### License  
+Distributed under the GPL License. See LICENSE for more information.  
