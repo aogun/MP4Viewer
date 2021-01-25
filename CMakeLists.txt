@@ -8,7 +8,7 @@ add_subdirectory(deps)
 add_subdirectory(src)
 
 # CPack
-set(CPACK_PACKAGE_VENDOR "personal")
+set(CPACK_PACKAGE_VENDOR "MP4Viewer")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "mp4/mov file viewer/editor.")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/aogun/MP4Viewer")
