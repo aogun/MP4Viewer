@@ -17,9 +17,9 @@
 #pragma comment(linker,"/subsystem:\"Windows\" /entry:\"mainCRTStartup\"")
 
 // Data
-static ID3D10Device*            g_pd3dDevice = NULL;
-static IDXGISwapChain*          g_pSwapChain = NULL;
-static ID3D10RenderTargetView*  g_mainRenderTargetView = NULL;
+static ID3D10Device*            g_pd3dDevice = nullptr;
+static IDXGISwapChain*          g_pSwapChain = nullptr;
+static ID3D10RenderTargetView*  g_mainRenderTargetView = nullptr;
 
 // Forward declarations of helper functions
 bool CreateDeviceD3D(HWND hWnd);
@@ -30,7 +30,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 std::string GetSystemFontFile(const char *faceName) {
 
-    static const LPCSTR fontRegistryPath = "Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts";
+    static const LPCSTR fontRegistryPath = R"(Software\Microsoft\Windows NT\CurrentVersion\Fonts)";
     HKEY hKey;
     LONG result;
     std::string wsFaceName(faceName);
@@ -42,7 +42,8 @@ std::string GetSystemFontFile(const char *faceName) {
     }
 
     DWORD maxValueNameSize, maxValueDataSize;
-    result = RegQueryInfoKey(hKey, 0, 0, 0, 0, 0, 0, 0, &maxValueNameSize, &maxValueDataSize, 0, 0);
+    result = RegQueryInfoKey(hKey, nullptr, nullptr, nullptr, nullptr, nullptr,
+                             nullptr, nullptr, &maxValueNameSize, &maxValueDataSize, nullptr, nullptr);
     if (result != ERROR_SUCCESS) {
         return "";
     }
@@ -112,9 +113,11 @@ int main(int, char**)
     setlocale(LC_ALL, "en_US.utf8");
     // Create application window
     ImGui_ImplWin32_EnableDpiAwareness();
-    WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("MP4Viewer"), NULL };
+    WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr),
+                      nullptr, nullptr, nullptr, nullptr, _T("MP4Viewer"), nullptr };
     ::RegisterClassEx(&wc);
-    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("MP4Viewer"), WS_OVERLAPPEDWINDOW, 100, 100, 1480, 960, NULL, NULL, wc.hInstance, NULL);
+    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("MP4Viewer"), WS_OVERLAPPEDWINDOW, 100, 100, 1480, 960,
+                               nullptr, nullptr, wc.hInstance, nullptr);
     g_hwnd = hwnd;
 //    SetWindowLong(hwnd, GWL_STYLE, 0);
     // Initialize Direct3D
@@ -172,7 +175,7 @@ int main(int, char**)
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-        if (::PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
+        if (::PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
         {
             ::TranslateMessage(&msg);
             ::DispatchMessage(&msg);
@@ -203,7 +206,7 @@ int main(int, char**)
         window.draw();
         // Rendering
         ImGui::Render();
-        g_pd3dDevice->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
+        g_pd3dDevice->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
         g_pd3dDevice->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
         ImGui_ImplDX10_RenderDrawData(ImGui::GetDrawData());
 
@@ -246,7 +249,8 @@ bool CreateDeviceD3D(HWND hWnd)
 
     UINT createDeviceFlags = 0;
     //createDeviceFlags |= D3D10_CREATE_DEVICE_DEBUG;
-    if (D3D10CreateDeviceAndSwapChain(NULL, D3D10_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, D3D10_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice) != S_OK)
+    if (D3D10CreateDeviceAndSwapChain(nullptr, D3D10_DRIVER_TYPE_HARDWARE, nullptr,
+                                      createDeviceFlags, D3D10_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice) != S_OK)
         return false;
 
     CreateRenderTarget();
@@ -256,21 +260,21 @@ bool CreateDeviceD3D(HWND hWnd)
 void CleanupDeviceD3D()
 {
     CleanupRenderTarget();
-    if (g_pSwapChain) { g_pSwapChain->Release(); g_pSwapChain = NULL; }
-    if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = NULL; }
+    if (g_pSwapChain) { g_pSwapChain->Release(); g_pSwapChain = nullptr; }
+    if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = nullptr; }
 }
 
 void CreateRenderTarget()
 {
     ID3D10Texture2D* pBackBuffer;
     g_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
-    g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_mainRenderTargetView);
+    g_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &g_mainRenderTargetView);
     pBackBuffer->Release();
 }
 
 void CleanupRenderTarget()
 {
-    if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = NULL; }
+    if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = nullptr; }
 }
 
 // Forward declare message handler from imgui_impl_win32.cpp
@@ -285,7 +289,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch (msg)
     {
         case WM_SIZE:
-            if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
+            if (g_pd3dDevice != nullptr && wParam != SIZE_MINIMIZED)
             {
                 CleanupRenderTarget();
                 g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
@@ -299,6 +303,8 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_DESTROY:
             ::PostQuitMessage(0);
             return 0;
+        default:
+            break;
     }
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }

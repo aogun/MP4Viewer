@@ -6,7 +6,7 @@
 
 #include <utility>
 
-mp4_manager::mp4_manager() {}
+mp4_manager::mp4_manager() = default;
 
 std::shared_ptr<mp4_file> mp4_manager::open(const char * path) {
     std::shared_ptr<mp4_file> result;

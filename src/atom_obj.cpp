@@ -4,6 +4,7 @@
 
 #include "atom_obj.h"
 #include "mm_log.h"
+#include <cmath>
 
 atom_obj::atom_obj(const char *name, uint32_t head_size, uint64_t size, uint64_t offset, uint8_t version,
                    uint32_t flags) {
@@ -12,18 +13,18 @@ atom_obj::atom_obj(const char *name, uint32_t head_size, uint64_t size, uint64_t
     m_offset = offset;
 }
 
-void atom_obj::add_atom(std::shared_ptr<atom_obj> obj) {
+void atom_obj::add_atom(const std::shared_ptr<atom_obj>& obj) {
     m_children.push_back(obj);
 }
 
-void atom_obj::add_fields(std::shared_ptr<atom_fields> field) {
+void atom_obj::add_fields(const std::shared_ptr<atom_fields>& field) {
     m_fields.push_back(field);
 }
 
 const char *atom_obj::get_digest() {
     if (m_digest.empty()) {
         char sz[128];
-        snprintf(sz, 128, "%s [size:%d, offset:0x%x]", m_name.c_str(), m_size, m_offset);
+        snprintf(sz, 128, "%s [size:%llu, offset:0x%llx]", m_name.c_str(), m_size, m_offset);
         m_digest = sz;
     }
     return m_digest.c_str();
@@ -40,7 +41,7 @@ std::vector<std::string> *atom_obj::get_page_names() {
         snprintf(sz, 64, "%d-%d", i * MAX_FIELD_NUM_IN_PAGE, (i + 1) * MAX_FIELD_NUM_IN_PAGE - 1);
         m_pages[i] = sz;
     }
-    snprintf(sz, 64, "%d-%d", (page_num - 1) * MAX_FIELD_NUM_IN_PAGE, m_fields.size() - 1);
+    snprintf(sz, 64, "%d-%llu", (page_num - 1) * MAX_FIELD_NUM_IN_PAGE, m_fields.size() - 1);
     m_pages[page_num - 1] = sz;
 
     return &m_pages;

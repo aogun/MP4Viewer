@@ -3,6 +3,7 @@ project(MP4Viewer VERSION 0.1.2)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(BUILD_APPS OFF)
 
 add_subdirectory(deps)
 add_subdirectory(src)

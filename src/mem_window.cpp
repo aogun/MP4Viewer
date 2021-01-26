@@ -96,7 +96,7 @@ void mem_window::check_data() {
         m_highlight_size = 0;
         m_size = 0;
         m_buffer_offset = 0;
-    };
+    }
     bool reload = false;
     do {
         if (m_current_file == f) {
@@ -146,7 +146,7 @@ void mem_window::check_data() {
             auto left = _ftelli64(handle);
             m_buffer_offset = offset > 2048 ? offset - 2048 : 0;
             left -= m_buffer_offset;
-            m_size = left > MAX_BUFFER_ALLOC_SIZE ? MAX_BUFFER_ALLOC_SIZE : left;
+            m_size = (int)(left > MAX_BUFFER_ALLOC_SIZE ? MAX_BUFFER_ALLOC_SIZE : left);
 
             _fseeki64(handle, m_buffer_offset, SEEK_SET);
 
@@ -206,7 +206,7 @@ void mem_window::save() {
         MM_LOG_ERROR("open file %s failed", f->get_name());
         return;
     }
-    _fseeki64(handle, m_buffer_offset + m_modified_range.begin, SEEK_SET);
+    _fseeki64(handle, (int64_t)(m_buffer_offset + m_modified_range.begin), SEEK_SET);
 
     MM_LOG_INFO("save offset from %llu to %llu", m_buffer_offset + m_modified_range.begin,
                 m_buffer_offset + m_modified_range.end);

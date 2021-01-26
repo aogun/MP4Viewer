@@ -18,7 +18,7 @@ void field_window::set_top(uint32_t top) {
 float CalcTextWidth(const char* text, const char* text_end)
 {
     ImFont* font = ImGui::GetFont();
-    ImVec2 text_size = font->CalcTextSizeA(font->FontSize, FLT_MAX, -1, text, text_end, NULL);
+    ImVec2 text_size = font->CalcTextSizeA(font->FontSize, FLT_MAX, -1, text, text_end, nullptr);
 
     return text_size.x;
 }
@@ -48,7 +48,7 @@ const char * warp_text(const char * text, float wrap_width, ImVec2 & size, int &
     len = IM_FLOOR(len + 0.95f);
     if (size.x == 0) size.x = len;
     *p++ = 0;
-    length = p - sz;
+    length = (int)(p - sz);
     return sz;
 }
 
@@ -101,7 +101,7 @@ void field_window::draw() {
             int index = 0;
             char label[16];
             if (atom->fields()->size() <= 100) {
-                ImGui::Columns(columns_count, NULL, true);
+                ImGui::Columns(columns_count, nullptr, true);
                 for (const auto &field : *atom->fields()) {
                     auto name = field->name();
                     auto x = ImGui::CalcTextSize(name.c_str()).x;;
@@ -157,10 +157,10 @@ void field_window::draw() {
                     atom->get_current_field_index(begin, end);
                 }
                 if (end != 0) {
-                    ImGui::Columns(columns_count, NULL, true);
+                    ImGui::Columns(columns_count, nullptr, true);
                     const auto &fields = *atom->fields();
                     ImGuiListClipper clipper;
-                    clipper.Begin(end - begin, text_height);
+                    clipper.Begin((int)(end - begin), text_height);
                     clipper.Step();
 
                     for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {

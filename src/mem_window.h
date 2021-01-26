@@ -50,7 +50,7 @@ private:
     std::string m_error;
     char m_title[128];
 
-    mem_range m_modified_range;
+    mem_range m_modified_range = {};
     ImFont * m_font = nullptr;
 };
 

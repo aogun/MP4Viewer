@@ -10,7 +10,7 @@
 
 extern HWND g_hwnd;
 
-dialog_window::dialog_window() {}
+dialog_window::dialog_window() = default;
 
 void dialog_window::open_dialog() {
     {
@@ -25,14 +25,14 @@ void dialog_window::open() {
 
     static char chPath[1024] = { 0 };
     bool selected = false;
-    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED |
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED |
                                       COINIT_DISABLE_OLE1DDE);
     if (SUCCEEDED(hr))
     {
         IFileOpenDialog *pFileOpen;
 
         // Create the FileOpenDialog object.
-        hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+        hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
                               IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
 
         if (SUCCEEDED(hr))

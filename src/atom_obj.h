@@ -41,8 +41,8 @@ public:
 
     virtual ~atom_obj();
 
-    void add_atom(std::shared_ptr<atom_obj> obj);
-    void add_fields(std::shared_ptr<atom_fields> field);
+    void add_atom(const std::shared_ptr<atom_obj>& obj);
+    void add_fields(const std::shared_ptr<atom_fields>& field);
 
     std::weak_ptr<atom_obj> parent() { return m_parent; }
     void set_parent(std::shared_ptr<atom_obj> parent) { m_parent = parent; }

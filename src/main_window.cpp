@@ -27,12 +27,12 @@ struct ExampleAppLog
         LineOffsets.push_back(0);
     }
 
-    void    AddLog(const char* fmt, va_list _ArgList)
+    void    AddLog(const char* fmt, va_list arg_list)
     {
         if (!Start) {
             static char sz[1024];
             va_list args;
-            vsnprintf(sz, 1024, fmt, _ArgList);
+            vsnprintf(sz, 1024, fmt, arg_list);
             LogBeforeStart.emplace_back(sz);
             return;
         }
@@ -44,7 +44,7 @@ struct ExampleAppLog
             LogBeforeStart.clear();
         }
         int old_size = Buf.size();
-        Buf.appendfv(fmt, _ArgList);
+        Buf.appendfv(fmt, arg_list);
         for (int new_size = Buf.size(); old_size < new_size; old_size++)
             if (Buf[old_size] == '\n')
                 LineOffsets.push_back(old_size + 1);
@@ -187,7 +187,6 @@ void main_window::ShowMenuFile()
 
 void main_window::draw() {
     ImVec2 menu_size;
-    bool open = true;
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))

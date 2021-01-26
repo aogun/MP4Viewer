@@ -17,7 +17,7 @@ public:
 
     void set_top(uint32_t top);
     virtual void draw();
-    void show_atom(std::shared_ptr<atom_obj> atom, uint32_t flags);
+    void show_atom(const std::shared_ptr<atom_obj>& atom, uint32_t flags);
 
 private:
     mp4_manager * m_manager = nullptr;

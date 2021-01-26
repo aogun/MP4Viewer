@@ -64,7 +64,7 @@ void atom_window::set_top(uint32_t top) {
     m_top = top;
 }
 
-void atom_window::show_atom(std::shared_ptr<atom_obj> atom, uint32_t flags) {
+void atom_window::show_atom(const std::shared_ptr<atom_obj>& atom, uint32_t flags) {
     uint32_t old_flags = flags;
     if (!atom->has_atoms()) flags |= ImGuiTreeNodeFlags_Leaf;
     if (m_selected_atom == atom->get_offset()) flags |= ImGuiTreeNodeFlags_Selected;

@@ -22,7 +22,7 @@ public:
 
     std::shared_ptr<my_inspect> get_inspect() { return m_inspect; }
     std::shared_ptr<atom_obj> current() { return m_selected; }
-    void select_atom(std::shared_ptr<atom_obj> obj);
+    void select_atom(const std::shared_ptr<atom_obj>& obj);
 
     const char * get_short_name() { return m_short_name.c_str(); }
 
