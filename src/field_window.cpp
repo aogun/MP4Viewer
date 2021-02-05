@@ -78,7 +78,7 @@ void field_window::draw() {
             ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.);
             ImGui::SetNextWindowPos(ImVec2(400, m_top), ImGuiCond_FirstUseEver);
             ImGui::SetNextWindowSize(ImVec2(400, size.y - m_top), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSizeConstraints(ImVec2(40, size.y - m_top), ImVec2(size.x, size.y - m_top));
+            ImGui::SetNextWindowSizeConstraints(ImVec2(400, size.y - m_top), ImVec2(size.x, size.y - m_top));
             ImGui::Begin("Detail Window", &m_manager->m_open_field_window, ImGuiWindowFlags_NoCollapse |
                                                                     ImGuiWindowFlags_NoBringToFrontOnFocus |
                                                                    ImGuiWindowFlags_HorizontalScrollbar);
@@ -108,7 +108,7 @@ void field_window::draw() {
                     if (x > name_width) name_width = x;
                 }
                 if (name_width > width / 2) name_width = width / 2;
-                value_width = width - name_width - INPUT_TEXT_SPACE * 2 - 10;
+                value_width = width - name_width - INPUT_TEXT_SPACE * 2 - 20;
 
                 for (const auto &field : *atom->fields()) {
                     ImGui::Separator();

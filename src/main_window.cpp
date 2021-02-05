@@ -269,28 +269,6 @@ void main_window::draw() {
     auto &io = ImGui::GetIO();
     auto size = io.DisplaySize;
 
-//    ImGui::SetNextWindowPos(ImVec2(0, menu_size.y));
-//    ImGui::SetNextWindowSize(ImVec2(size.x, size.y - menu_size.y));
-//    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.);
-//    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.);
-//    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-//    ImGui::Begin("MP4Viewer", &open,
-//                 ImGuiWindowFlags_NoResize |
-//                 ImGuiWindowFlags_NoTitleBar |
-//                 ImGuiWindowFlags_NoScrollbar |
-//                 ImGuiWindowFlags_NoBringToFrontOnFocus |
-//                 ImGuiWindowFlags_AlwaysAutoResize);
-//    ImGui::PopStyleVar(3);
-
-//    m_file_dialog.Display();
-//    if(m_file_dialog.HasSelected())
-//    {
-//        MM_LOG_INFO("Selected filename %s", m_file_dialog.GetSelected().string().c_str());
-//        m_manager->open(m_file_dialog.GetSelected().string().c_str());
-//        m_file_dialog.ClearSelected();
-//    }
-//    ImGui::End();
-
     if (m_dialog_window.is_selected()) {
         m_manager->open(m_dialog_window.get_path());
         m_dialog_window.clear();

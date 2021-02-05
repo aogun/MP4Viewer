@@ -43,7 +43,7 @@ void atom_window::draw() {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.);
         ImGui::SetNextWindowSize(ImVec2(400, size.y - m_top), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSizeConstraints(ImVec2(40, size.y - m_top), ImVec2(size.x, size.y - m_top));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(400, size.y - m_top), ImVec2(size.x, size.y - m_top));
         ImGui::Begin(" ", nullptr,
                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar |
                      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |

@@ -13,6 +13,7 @@
 #include "mp4_manager.h"
 #include "windows.h"
 #include <sstream>
+#include "drag_file_win32.h"
 
 #pragma comment(linker,"/subsystem:\"Windows\" /entry:\"mainCRTStartup\"")
 
@@ -105,6 +106,7 @@ void add_log(const char* fmt, ...);
 // Main code
 int main(int, char**)
 {
+    OleInitialize(NULL);
 #ifdef _DEBUG
     mm_log_init(add_log);
 #else
@@ -128,6 +130,8 @@ int main(int, char**)
         return 1;
     }
     mp4_manager manager;
+    DropManager mgr(hwnd, &manager);
+    RegisterDragDrop(hwnd, &mgr);
     main_window window(&manager);
     std::shared_ptr<mp4_file> current;
     const char * fonts[] = {"Microsoft YaHei", "Arial (TrueType)"};
@@ -160,9 +164,7 @@ int main(int, char**)
     ImGui_ImplDX10_Init(g_pd3dDevice);
 
     window.init();
-    // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
+
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Main loop
@@ -213,11 +215,16 @@ int main(int, char**)
         g_pSwapChain->Present(1, 0); // Present with vsync
         //g_pSwapChain->Present(0, 0); // Present without vsync
         if (!window.is_running()) break;
+
+
     }
+    RevokeDragDrop(hwnd);
 
     ImGui_ImplDX10_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
+
+    OleUninitialize();
 
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);
