@@ -3,6 +3,7 @@
 //
 
 #include "main_window.h"
+#include "common.h"
 
 struct ExampleAppLog
 {
@@ -187,6 +188,9 @@ void main_window::ShowMenuFile()
 
 void main_window::draw() {
     ImVec2 menu_size;
+    auto &io = ImGui::GetIO();
+    auto size = io.DisplaySize;
+
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
@@ -259,16 +263,13 @@ void main_window::draw() {
         if (ImGui::BeginMenu("Help"))
         {
             if (ImGui::MenuItem("about", nullptr)) {
-
+                std::thread(display_about).detach();
             }
             ImGui::EndMenu();
         }
         menu_size = ImGui::GetWindowSize();
         ImGui::EndMainMenuBar();
     }
-    auto &io = ImGui::GetIO();
-    auto size = io.DisplaySize;
-
     if (m_dialog_window.is_selected()) {
         m_manager->open(m_dialog_window.get_path());
         m_dialog_window.clear();
