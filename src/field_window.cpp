@@ -100,7 +100,8 @@ void field_window::draw() {
             float value_width = 0;
             int index = 0;
             char label[16];
-            if (atom->fields()->size() <= 100) {
+            auto array = atom->field_array();
+            if (!array && atom->fields()->size() <= 100) {
                 ImGui::Columns(columns_count, nullptr, true);
                 for (const auto &field : *atom->fields()) {
                     auto name = field->name();
@@ -137,6 +138,9 @@ void field_window::draw() {
                 text_size.y = text_height;
                 uint32_t begin = 0;
                 uint32_t end = atom->fields()->size();
+                if (array) {
+                    end = atom->field_array()->rows();
+                }
                 if (atom->reach_page_limit()) {
                     auto &pages = *atom->get_page_names();
 
@@ -159,19 +163,35 @@ void field_window::draw() {
                 if (end != 0) {
                     ImGui::Columns(columns_count, nullptr, true);
                     const auto &fields = *atom->fields();
+                    if (array && !fields.empty()) {
+                        index = 0;
+                        for (const auto &field : fields) {
+                            ImGui::Separator();
+                            sprintf(label, "##%d-name-f", index);
+                            text_size.x = name_width;
+                            auto name = field->name();
+                            ImGui::Text("%s", name.c_str());
+                            ImGui::NextColumn();
+                            auto value = field->value();
+                            sprintf(label, "##%d-value-f", index);
+                            text_size.x = value_width;
+                            ImGui::InputTextMultiline(label, (char*)value.c_str(), value.size(),
+                                                      text_size, ImGuiInputTextFlags_ReadOnly);
+                            ImGui::NextColumn();
+                            index ++;
+                        }
+                    }
                     ImGuiListClipper clipper;
                     clipper.Begin((int)(end - begin), text_height);
                     clipper.Step();
-
-                    for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
-                        const auto &field = fields[i + begin];
+                    for (int i = clipper.DisplayStart; i <= clipper.DisplayEnd; i++) {
                         ImGui::Separator();
                         sprintf(label, "##%d-name", i);
                         text_size.x = name_width;
-                        auto name = field->name();
-                        ImGui::Text("%s", name.c_str());
+                        auto name = atom->get_field_name(i + begin);
+                        ImGui::Text("%s", name);
                         ImGui::NextColumn();
-                        auto value = field->value();
+                        auto value = atom->get_field_value_str(i + begin);
                         sprintf(label, "##%d-value", i);
                         text_size.x = value_width;
                         ImGui::InputTextMultiline(label, (char*)value.c_str(), value.size(),

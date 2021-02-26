@@ -8,3 +8,4 @@
 [submodule "deps/Bento4"]
 	path = deps/Bento4
 	url = https://github.com/aogun/Bento4.git
+    branch = aogun

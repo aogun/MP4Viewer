@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <map>
 
 #define MAX_FIELD_NUM_IN_PAGE       3000
 
@@ -18,12 +19,12 @@
 //    FIELD_TYPE_DATA,
 //} atom_field_value_type;
 
-class atom_fields {
+class atom_field {
 public:
-    atom_fields(const char * name, const char * value);
-    atom_fields(const char * name, float value);
-    atom_fields(const char * name, uint64_t value);
-    atom_fields(const char * name, const uint8_t *value, uint32_t size);
+    atom_field(const char * name, const char * value);
+    atom_field(const char * name, float value);
+    atom_field(const char * name, uint64_t value);
+    atom_field(const char * name, const uint8_t *value, uint32_t size);
 
     const char * get_name() { return m_name.c_str(); }
     const char * get_value() { return m_value.c_str(); }
@@ -35,14 +36,39 @@ private:
     std::string m_value;
 };
 
+class atom_fields {
+public:
+    atom_fields(const char * name, int row_num, int column_num, const char * names, int64_t * data);
+
+    virtual ~atom_fields();
+
+    const char * get_name(uint32_t row);
+    const char * get_column_name(int column);
+    int64_t get_value(int column, int row);
+    int64_t* get_values(int row);
+    const std::string & value(uint32_t row);
+    int rows() { return m_row_num; }
+private:
+    std::vector<std::string> m_column_name;
+    int m_column_num = 0;
+    int m_row_num = 0;
+    int64_t * m_data = nullptr;
+    std::string m_name;
+    std::map<int, std::string> m_name_map;
+    std::map<int, std::string> m_value_map;
+};
+
 class atom_obj {
 public:
-    atom_obj(const char * name, uint32_t head_size, uint64_t size, uint64_t offset, uint8_t version, uint32_t flags);
+    atom_obj(const char * name, uint32_t head_size, uint64_t size,
+             uint64_t offset, uint8_t version, uint32_t flags);
 
     virtual ~atom_obj();
 
     void add_atom(const std::shared_ptr<atom_obj>& obj);
-    void add_fields(const std::shared_ptr<atom_fields>& field);
+    void add_field(const std::shared_ptr<atom_field>& field);
+    void add_field_array(const char * name, int row_num, int column_num,
+                         const char *column_name, int64_t *data);
 
     std::weak_ptr<atom_obj> parent() { return m_parent; }
     void set_parent(std::shared_ptr<atom_obj> parent) { m_parent = parent; }
@@ -55,9 +81,14 @@ public:
     uint64_t get_size() const { return m_size; }
 
     std::vector<std::shared_ptr<atom_obj>> * atoms() { return &m_children; }
-    std::vector<std::shared_ptr<atom_fields>> * fields() { return &m_fields; }
+    std::vector<std::shared_ptr<atom_field>> * fields() { return &m_fields; }
+    std::shared_ptr<atom_fields> field_array() { return m_field_array; }
 
-    bool reach_page_limit() { return m_fields.size() > MAX_FIELD_NUM_IN_PAGE; }
+    const char * get_field_name(uint32_t index);
+    const char * get_field_value(uint32_t index);
+    const std::string & get_field_value_str(uint32_t index);
+
+    bool reach_page_limit();
     std::vector<std::string> * get_page_names();
     const char * get_current_page_name();
     void set_page_index(uint32_t index);
@@ -68,7 +99,8 @@ public:
 private:
     std::string m_name;
     std::string m_digest;
-    std::vector<std::shared_ptr<atom_fields>> m_fields;
+    std::vector<std::shared_ptr<atom_field>> m_fields;
+    std::shared_ptr<atom_fields> m_field_array;
     std::vector<std::shared_ptr<atom_obj>> m_children;
     std::weak_ptr<atom_obj> m_parent;
     uint64_t m_size = 0;

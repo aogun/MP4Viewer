@@ -17,7 +17,7 @@ AP4_MakePrefixString(unsigned int indent, char* prefix, AP4_Size size)
 
 my_inspect::my_inspect()
 {
-    m_Verbosity = 2;
+    m_Verbosity = 99;
 }
 
 
@@ -107,9 +107,9 @@ void
 my_inspect::AddField(const char* name, const char* value, FormatHint)
 {
     if (m_current) {
-        auto field = std::make_shared<atom_fields>(name, value);
+        auto field = std::make_shared<atom_field>(name, value);
 //        MM_LOG_INFO("add field %s to %s", name, m_current->get_name());
-        m_current->add_fields(field);
+        m_current->add_field(field);
     } else {
         MM_LOG_WARN("no current atom");
     }
@@ -122,9 +122,9 @@ void
 my_inspect::AddField(const char* name, AP4_UI64 value, FormatHint hint)
 {
     if (m_current) {
-        auto field = std::make_shared<atom_fields>(name, value);
+        auto field = std::make_shared<atom_field>(name, value);
 //        MM_LOG_INFO("add field %s to %s", name, m_current->get_name());
-        m_current->add_fields(field);
+        m_current->add_field(field);
     } else {
         MM_LOG_WARN("no current atom");
     }
@@ -137,9 +137,9 @@ void
 my_inspect::AddFieldF(const char* name, float value, FormatHint /*hint*/)
 {
     if (m_current) {
-        auto field = std::make_shared<atom_fields>(name, value);
+        auto field = std::make_shared<atom_field>(name, value);
 //        MM_LOG_INFO("add field %s to %s", name, m_current->get_name());
-        m_current->add_fields(field);
+        m_current->add_field(field);
     } else {
         MM_LOG_WARN("no current atom");
     }
@@ -155,8 +155,17 @@ my_inspect::AddField(const char*          name,
                              FormatHint           /* hint */)
 {
     if (m_current) {
-        auto field = std::make_shared<atom_fields>(name, bytes, byte_count);
-        m_current->add_fields(field);
+        auto field = std::make_shared<atom_field>(name, bytes, byte_count);
+        m_current->add_field(field);
+    } else {
+        MM_LOG_WARN("no current atom");
+    }
+}
+
+void my_inspect::AddFieldArray(AP4_Size column_num, AP4_Size row_num,
+                               const char * column_names, AP4_UI64 *data) {
+    if (m_current) {
+        m_current->add_field_array("", row_num, column_num, column_names, (int64_t *)data);
     } else {
         MM_LOG_WARN("no current atom");
     }

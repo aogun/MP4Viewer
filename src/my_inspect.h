@@ -14,6 +14,9 @@ public:
     explicit my_inspect();
     ~my_inspect() override;
 
+    void AddFieldArray(AP4_Size column_num, AP4_Size row_num,
+                       const char * column_names, AP4_UI64 *data) override;
+
     // methods
     void StartAtom(const char* name,
                    AP4_UI08    version,
