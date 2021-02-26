@@ -99,7 +99,7 @@ void field_window::draw() {
             float name_width = 0;
             float value_width = 0;
             int index = 0;
-            char label[16];
+            char label[32];
             auto array = atom->field_array();
             if (!array && atom->fields()->size() <= 100) {
                 ImGui::Columns(columns_count, nullptr, true);
@@ -135,6 +135,9 @@ void field_window::draw() {
             } else {
                 name_width = 120;
                 value_width = width - 120;
+                if (value_width <= 0) {
+                    value_width = 1;
+                }
                 text_size.y = text_height;
                 uint32_t begin = 0;
                 uint32_t end = atom->fields()->size();
@@ -183,20 +186,22 @@ void field_window::draw() {
                     }
                     ImGuiListClipper clipper;
                     clipper.Begin((int)(end - begin), text_height);
-                    clipper.Step();
-                    for (int i = clipper.DisplayStart; i <= clipper.DisplayEnd; i++) {
-                        ImGui::Separator();
-                        sprintf(label, "##%d-name", i);
-                        text_size.x = name_width;
-                        auto name = atom->get_field_name(i + begin);
-                        ImGui::Text("%s", name);
-                        ImGui::NextColumn();
-                        auto value = atom->get_field_value_str(i + begin);
-                        sprintf(label, "##%d-value", i);
-                        text_size.x = value_width;
-                        ImGui::InputTextMultiline(label, (char*)value.c_str(), value.size(),
-                                                  text_size, ImGuiInputTextFlags_ReadOnly);
-                        ImGui::NextColumn();
+                    while (clipper.Step()) {
+                        for (int i = clipper.DisplayStart; i <= clipper.DisplayEnd; i++) {
+                            if (i >= end) break;
+                            ImGui::Separator();
+                            sprintf(label, "##%d-name", i);
+                            text_size.x = name_width;
+                            auto name = atom->get_field_name(i + begin);
+                            ImGui::Text("%s", name);
+                            ImGui::NextColumn();
+                            auto value = atom->get_field_value_str(i + begin);
+                            sprintf(label, "##%d-value", i);
+                            text_size.x = value_width;
+                            ImGui::InputTextMultiline(label, (char*)value.c_str(), value.size(),
+                                                      text_size, ImGuiInputTextFlags_ReadOnly);
+                            ImGui::NextColumn();
+                        }
                     }
                     clipper.End();
                 }
