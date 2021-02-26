@@ -1,5 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
-project(MP4Viewer VERSION 0.1.2)
+file(READ "src/version.h" ver)
+string(REGEX MATCH "MP4_VIEWER_VERSION_MAJOR ([0-9]*)" _ ${ver})
+set(ver_major ${CMAKE_MATCH_1})
+
+string(REGEX MATCH "MP4_VIEWER_VERSION_MINOR ([0-9]*)" _ ${ver})
+set(ver_minor ${CMAKE_MATCH_1})
+
+string(REGEX MATCH "MP4_VIEWER_VERSION_PATCH ([0-9]*)" _ ${ver})
+set(ver_patch ${CMAKE_MATCH_1})
+
+message("version: ${ver_major}.${ver_minor}.${ver_patch}")
+project(MP4Viewer VERSION ${ver_major}.${ver_minor}.${ver_patch})
 
 set(CMAKE_CXX_STANDARD 17)
 
