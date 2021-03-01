@@ -95,6 +95,7 @@ void field_window::draw() {
             ImGui::InputTextMultiline("##field-title", (char*)atom->get_name(), strlen(atom->get_name()),
                                       text_size, ImGuiInputTextFlags_ReadOnly);
             int columns_count = 2;
+            bool has_columns = true;
 
             float name_width = 0;
             float value_width = 0;
@@ -204,13 +205,16 @@ void field_window::draw() {
                         }
                     }
                     clipper.End();
+                } else {
+                    has_columns = false;
                 }
             }
-
-            ImGui::SetColumnWidth(0, name_width + INPUT_TEXT_SPACE + 10);
-            ImGui::SetColumnWidth(1, value_width + INPUT_TEXT_SPACE);
-            ImGui::Columns(1);
-            ImGui::Separator();
+            if (has_columns) {
+                ImGui::SetColumnWidth(0, name_width + INPUT_TEXT_SPACE + 10);
+                ImGui::SetColumnWidth(1, value_width + INPUT_TEXT_SPACE);
+                ImGui::Columns(1);
+                ImGui::Separator();
+            }
             ImGui::PopStyleVar(1);
             ImGui::PopStyleColor(1);
             ImGui::End();
