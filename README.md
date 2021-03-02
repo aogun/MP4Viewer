@@ -14,10 +14,8 @@ MP4Viewer is a mp4/mov GUI viewer/editor.
 ![ui example 2](docs/images/ui-2.jpg)  
 
 ### Future plans
-- file change check and reload
-- video frame preview
+- video frame analyse/preview?
 - multi-platform support
-- add some warning and prompt window
 
 ### External Libraries
 This program uses the following external opensource project.  
