@@ -15,6 +15,7 @@ set(SOURCE_FILES ${SOURCE_FILES}
         )
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} D3D10 ap4)
+target_sources(${PROJECT_NAME} PRIVATE ../data/MP4Viewer.rc)
 
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION "bin" COMPONENT applications)

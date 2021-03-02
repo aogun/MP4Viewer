@@ -14,6 +14,7 @@
 #include "windows.h"
 #include <sstream>
 #include "drag_file_win32.h"
+#include "../data/resource.h"
 
 #pragma comment(linker,"/subsystem:\"Windows\" /entry:\"mainCRTStartup\"")
 
@@ -117,6 +118,10 @@ int main(int, char**)
     ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr),
                       nullptr, nullptr, nullptr, nullptr, _T("MP4Viewer"), nullptr };
+
+    HICON hIcon = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1));
+    wc.hIcon = hIcon;
+    wc.hIconSm = hIcon;
     ::RegisterClassEx(&wc);
     HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("MP4Viewer"), WS_OVERLAPPEDWINDOW, 100, 100, 1480, 960,
                                nullptr, nullptr, wc.hInstance, nullptr);
