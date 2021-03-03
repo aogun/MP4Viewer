@@ -39,15 +39,16 @@ void atom_window::draw() {
         }
         auto &io = ImGui::GetIO();
         auto size = io.DisplaySize;
-        ImGui::SetNextWindowPos(ImVec2(0, m_top), ImGuiCond_FirstUseEver);
+        auto pos = ImGui::GetMainViewport()->WorkPos;
+        pos.y -= m_top;
+        ImGui::SetNextWindowPos(pos, ImGuiCond_FirstUseEver);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.);
         ImGui::SetNextWindowSize(ImVec2(400, size.y - m_top), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSizeConstraints(ImVec2(400, size.y - m_top), ImVec2(size.x, size.y - m_top));
-        ImGui::Begin(" ", nullptr,
+        ImGui::Begin("Box view", nullptr,
                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar |
-                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
-                     ImGuiWindowFlags_NoTitleBar);
+                     ImGuiWindowFlags_NoBringToFrontOnFocus);
         ImGui::PopStyleVar(2);
         uint32_t flags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
         if (ImGui::TreeNodeEx(file->get_name(), flags)) {

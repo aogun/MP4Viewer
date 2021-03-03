@@ -43,7 +43,10 @@ void mem_window::draw() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.);
     if (!m_error.empty()) {
-        ImGui::SetNextWindowPos(ImVec2(800, m_top), ImGuiCond_FirstUseEver);
+        auto pos = ImGui::GetMainViewport()->WorkPos;
+        pos.y -= m_top;
+        pos.x += 800;
+        ImGui::SetNextWindowPos(pos, ImGuiCond_FirstUseEver);
         if (ImGui::Begin(m_title, &m_manager->m_open_mem_window, ImGuiWindowFlags_NoScrollbar))
         {
             ImGui::TextColored((ImVec4)(ImColor(255, 0, 0)), "%s", m_error.c_str());
@@ -51,8 +54,10 @@ void mem_window::draw() {
         ImGui::End();
     } else {
         if (m_highlight_size > 0) {
-
-            ImGui::SetNextWindowPos(ImVec2(800, m_top), ImGuiCond_FirstUseEver);
+            auto pos = ImGui::GetMainViewport()->WorkPos;
+            pos.y -= m_top;
+            pos.x += 800;
+            ImGui::SetNextWindowPos(pos, ImGuiCond_FirstUseEver);
             m_editor.DrawWindow(m_title, m_buffer, m_size, m_buffer_offset, &m_manager->m_open_mem_window,
                                 m_font, ImGuiWindowFlags_NoBringToFrontOnFocus);
             if (m_editor.HighlightMin != m_highlight_offset - m_buffer_offset) {

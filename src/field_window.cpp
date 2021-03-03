@@ -76,7 +76,10 @@ void field_window::draw() {
             auto size = io.DisplaySize;
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.);
-            ImGui::SetNextWindowPos(ImVec2(400, m_top), ImGuiCond_FirstUseEver);
+            auto pos = ImGui::GetMainViewport()->WorkPos;
+            pos.y -= m_top;
+            pos.x += 400;
+            ImGui::SetNextWindowPos(pos, ImGuiCond_FirstUseEver);
             ImGui::SetNextWindowSize(ImVec2(400, size.y - m_top), ImGuiCond_FirstUseEver);
             ImGui::SetNextWindowSizeConstraints(ImVec2(400, size.y - m_top), ImVec2(size.x, size.y - m_top));
             ImGui::Begin("Detail Window", &m_manager->m_open_field_window, ImGuiWindowFlags_NoCollapse |

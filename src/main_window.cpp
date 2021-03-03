@@ -190,7 +190,7 @@ void main_window::draw() {
     ImVec2 menu_size;
     auto &io = ImGui::GetIO();
     auto size = io.DisplaySize;
-
+    ImGui::DockSpaceOverViewport();
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
@@ -306,6 +306,9 @@ void main_window::draw() {
     m_field_window.set_top(menu_size.y);
     m_field_window.draw();
 
+//    bool show = true;
+//    ImGui::ShowDemoWindow(&show);
+
     if (m_open_log_window) {
         ImGui::SetNextWindowSize(ImVec2(size.x, 400), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos(ImVec2(0, size.y - 400), ImGuiCond_FirstUseEver);
@@ -342,7 +345,7 @@ bool main_window::init() {
     m_mem_window.set_font(m_fonts["default"]);
     io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsLight();
-    io.IniFilename = nullptr;
+//    io.IniFilename = nullptr;
 
     ImFontConfig config;
     config.SizePixels = 30;
