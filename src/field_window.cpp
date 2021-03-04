@@ -98,7 +98,6 @@ void field_window::draw() {
             ImGui::InputTextMultiline("##field-title", (char*)atom->get_name(), strlen(atom->get_name()),
                                       text_size, ImGuiInputTextFlags_ReadOnly);
             int columns_count = 2;
-            bool has_columns = true;
 
             float name_width = 0;
             float value_width = 0;
@@ -167,27 +166,27 @@ void field_window::draw() {
                     }
                     atom->get_current_field_index(begin, end);
                 }
-                if (end != 0) {
-                    ImGui::Columns(columns_count, nullptr, true);
-                    const auto &fields = *atom->fields();
-                    if (array && !fields.empty()) {
-                        index = 0;
-                        for (const auto &field : fields) {
-                            ImGui::Separator();
-                            sprintf(label, "##%d-name-f", index);
-                            text_size.x = name_width;
-                            auto name = field->name();
-                            ImGui::Text("%s", name.c_str());
-                            ImGui::NextColumn();
-                            auto value = field->value();
-                            sprintf(label, "##%d-value-f", index);
-                            text_size.x = value_width;
-                            ImGui::InputTextMultiline(label, (char*)value.c_str(), value.size(),
-                                                      text_size, ImGuiInputTextFlags_ReadOnly);
-                            ImGui::NextColumn();
-                            index ++;
-                        }
+                ImGui::Columns(columns_count, nullptr, true);
+                const auto &fields = *atom->fields();
+                if (array && !fields.empty()) {
+                    index = 0;
+                    for (const auto &field : fields) {
+                        ImGui::Separator();
+                        sprintf(label, "##%d-name-f", index);
+                        text_size.x = name_width;
+                        auto name = field->name();
+                        ImGui::Text("%s", name.c_str());
+                        ImGui::NextColumn();
+                        auto value = field->value();
+                        sprintf(label, "##%d-value-f", index);
+                        text_size.x = value_width;
+                        ImGui::InputTextMultiline(label, (char*)value.c_str(), value.size(),
+                                                  text_size, ImGuiInputTextFlags_ReadOnly);
+                        ImGui::NextColumn();
+                        index ++;
                     }
+                }
+                if (end != 0) {
                     ImGuiListClipper clipper;
                     clipper.Begin((int)(end - begin), text_height);
                     while (clipper.Step()) {
@@ -208,16 +207,13 @@ void field_window::draw() {
                         }
                     }
                     clipper.End();
-                } else {
-                    has_columns = false;
                 }
             }
-            if (has_columns) {
-                ImGui::SetColumnWidth(0, name_width + INPUT_TEXT_SPACE + 10);
-                ImGui::SetColumnWidth(1, value_width + INPUT_TEXT_SPACE);
-                ImGui::Columns(1);
-                ImGui::Separator();
-            }
+            ImGui::SetColumnWidth(0, name_width + INPUT_TEXT_SPACE + 10);
+            ImGui::SetColumnWidth(1, value_width + INPUT_TEXT_SPACE);
+            ImGui::Columns(1);
+            ImGui::Separator();
+
             ImGui::PopStyleVar(1);
             ImGui::PopStyleColor(1);
             ImGui::End();
