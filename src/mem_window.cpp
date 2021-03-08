@@ -150,6 +150,7 @@ void mem_window::check_data() {
             _fseeki64(handle, 0, SEEK_END);
             auto left = _ftelli64(handle);
             m_buffer_offset = offset > 2048 ? offset - 2048 : 0;
+            m_buffer_offset = m_buffer_offset & (uint64_t(-1) << 4);
             left -= m_buffer_offset;
             m_size = (int)(left > MAX_BUFFER_ALLOC_SIZE ? MAX_BUFFER_ALLOC_SIZE : left);
 
