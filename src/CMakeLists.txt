@@ -10,11 +10,11 @@ set(SOURCE_FILES ${SOURCE_FILES}
         ../deps/imgui/imgui_demo.cpp
         ../deps/imgui/imgui_widgets.cpp
         ../deps/imgui/imgui_tables.cpp
-        ../deps/imgui/backends/imgui_impl_dx10.cpp
+        ../deps/imgui/backends/imgui_impl_dx11.cpp
         ../deps/imgui/backends/imgui_impl_win32.cpp
         )
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} D3D10 ap4)
+target_link_libraries(${PROJECT_NAME} D3D11 ap4)
 target_sources(${PROJECT_NAME} PRIVATE ../data/MP4Viewer.rc)
 
 install(TARGETS ${PROJECT_NAME}

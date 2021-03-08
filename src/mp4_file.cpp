@@ -43,6 +43,7 @@ bool mp4_file::open(const char *path) {
     if (input) input->Release();
     m_name = path;
     m_short_name = std::filesystem::path(path).filename().string();
+    m_inspect->Finished();
     return true;
 }
 
@@ -69,4 +70,10 @@ void mp4_file::select_atom(const std::shared_ptr<atom_obj>& obj) {
     m_selected = obj;
     m_offset = obj->get_offset();
     m_size = obj->get_size();
+}
+
+void mp4_file::select_data(uint64_t offset, uint32_t size) {
+    MM_LOG_INFO("select data offset %llu, size %u", offset, size);
+    m_offset = offset;
+    m_size = size;
 }

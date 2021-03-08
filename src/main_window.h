@@ -26,6 +26,8 @@ public:
     void add_font(const char * name, const char * path);
 
     bool needs_rebuild_font();
+
+    void enable_debug() { m_debug = true; }
 private:
     void ShowMenuFile();
     bool change_font(const char * name);
@@ -47,6 +49,7 @@ private:
     ImFont * m_fps_font = nullptr;
 
     volatile bool m_needs_rebuild_font = false;
+    bool m_debug = false;
 };
 
 

@@ -3,6 +3,8 @@
 //
 
 #include "field_window.h"
+#include "res.h"
+#include "imgui_ext.h"
 
 field_window::field_window(mp4_manager *manager) {
     m_manager = manager;
@@ -57,6 +59,9 @@ void field_window::draw() {
         MM_LOG_ERROR("no manager");
         return;
     }
+    if (!m_zoom_in) {
+        m_zoom_in = get_inner_texture(ID_RES_IMAGE_ZOOM_IN);
+    }
     if (!m_manager->m_open_field_window) {
         return;
     }
@@ -92,6 +97,7 @@ void field_window::draw() {
             ImVec2 text_size;
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
             ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor(0.f, 0.f, 0.f, 0.f));
+            ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.f, 0.f, 0.f, 0.f));
 
             text_size.x = width;
             text_size.y = text_height;
@@ -198,11 +204,23 @@ void field_window::draw() {
                             auto name = atom->get_field_name(i + begin);
                             ImGui::Text("%s", name);
                             ImGui::NextColumn();
-                            auto value = atom->get_field_value_str(i + begin);
+                            auto field_index = i + begin;
+                            auto value = atom->get_field_value_str(field_index);
                             sprintf(label, "##%d-value", i);
                             text_size.x = value_width;
+                            if (atom->get_field_offset_num() > index && value_width > 100) {
+                                text_size.x -= 100;
+                            }
                             ImGui::InputTextMultiline(label, (char*)value.c_str(), value.size(),
                                                       text_size, ImGuiInputTextFlags_ReadOnly);
+                            if (atom->get_field_offset_num() > index && value_width > 100 && m_zoom_in) {
+                                ImGui::SameLine();
+                                sprintf(label, "##%d-detail", i);
+                                if (ImageButtonEx(label, m_zoom_in, ImVec2(text_height, text_height))) {
+                                    m_manager->current()->select_data(atom->get_field_offset(field_index),
+                                                                      *atom->get_field_value_int(field_index));
+                                }
+                            }
                             ImGui::NextColumn();
                         }
                     }
@@ -215,7 +233,7 @@ void field_window::draw() {
             ImGui::Separator();
 
             ImGui::PopStyleVar(1);
-            ImGui::PopStyleColor(1);
+            ImGui::PopStyleColor(2);
             ImGui::End();
         }
     } while (false);

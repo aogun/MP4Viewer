@@ -63,7 +63,7 @@ void mem_window::draw() {
             if (m_editor.HighlightMin != m_highlight_offset - m_buffer_offset) {
                 m_editor.GotoAddrAndHighlight(m_highlight_offset - m_buffer_offset,
                                               m_highlight_offset - m_buffer_offset + m_highlight_size);
-                MM_LOG_INFO("change hightlight range to %llu - %llu", m_highlight_offset - m_buffer_offset,
+                MM_LOG_INFO("change highlight range to %llu - %llu", m_highlight_offset - m_buffer_offset,
                             m_highlight_offset - m_buffer_offset + m_highlight_size);
             }
         }

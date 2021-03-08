@@ -36,7 +36,10 @@ public:
     void AddField(const char* name, const unsigned char* bytes, AP4_Size size, FormatHint hint) override;
 
     std::vector<std::shared_ptr<atom_obj>> * atoms() { return &m_atoms; }
+
+    void Finished();
 private:
+    void process_atom(std::shared_ptr<atom_obj> &atom);
     std::vector<std::shared_ptr<atom_obj>> m_atoms;
     std::shared_ptr<atom_obj> m_current;
 };

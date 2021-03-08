@@ -24,6 +24,7 @@ private:
     uint32_t m_top = 0;
 
     int64_t m_selected = -1;
+    void * m_zoom_in = nullptr;
 };
 
 

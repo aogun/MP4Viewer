@@ -38,20 +38,22 @@ private:
 
 class atom_fields {
 public:
-    atom_fields(const char * name, int row_num, int column_num, const char * names, int64_t * data);
+    atom_fields(const char * name, uint32_t row_num, uint32_t column_num,
+                const char * names, int64_t * data);
 
     virtual ~atom_fields();
 
     const char * get_name(uint32_t row);
-    const char * get_column_name(int column);
-    int64_t get_value(int column, int row);
-    int64_t* get_values(int row);
+    const char * get_column_name(uint32_t column);
+    int64_t get_value(uint32_t column, uint32_t row);
+    int64_t* get_values(uint32_t row);
     const std::string & value(uint32_t row);
-    int rows() { return m_row_num; }
+    uint32_t rows() { return m_row_num; }
+    int64_t * data() { return m_data; }
 private:
     std::vector<std::string> m_column_name;
     int m_column_num = 0;
-    int m_row_num = 0;
+    uint32_t m_row_num = 0;
     int64_t * m_data = nullptr;
     std::string m_name;
     std::map<int, std::string> m_name_map;
@@ -71,8 +73,9 @@ public:
                          const char *column_name, int64_t *data);
 
     std::weak_ptr<atom_obj> parent() { return m_parent; }
-    void set_parent(std::shared_ptr<atom_obj> parent) { m_parent = parent; }
+    void set_parent(const std::shared_ptr<atom_obj>& parent) { m_parent = parent; }
     const char * get_name() { return m_name.c_str(); }
+    uint32_t get_type() { return m_type; }
     const char * get_digest();
 
     bool has_fields() { return !m_fields.empty(); }
@@ -80,12 +83,21 @@ public:
     uint64_t get_offset() const { return m_offset; }
     uint64_t get_size() const { return m_size; }
 
+    bool has_sample_offset() { return m_has_sample_offset; }
+//    void get_sample_offset(uint32_t index, uint64_t offset, uint32_t sync_index);
+
     std::vector<std::shared_ptr<atom_obj>> * atoms() { return &m_children; }
     std::vector<std::shared_ptr<atom_field>> * fields() { return &m_fields; }
     std::shared_ptr<atom_fields> field_array() { return m_field_array; }
 
+    void set_field_offset(int64_t * data, uint32_t num);
+    uint32_t get_field_offset_num() { return m_field_offset_num; }
+    int64_t * get_field_offset_array() { return m_field_offset; }
+    int64_t get_field_offset(uint32_t index) { return m_field_offset[index]; }
+
     const char * get_field_name(uint32_t index);
     const char * get_field_value(uint32_t index);
+    int64_t * get_field_value_int(uint32_t index);
     const std::string & get_field_value_str(uint32_t index);
 
     bool reach_page_limit();
@@ -109,7 +121,15 @@ private:
     std::vector<std::string> m_pages;
     uint32_t m_page_index = 0;
 
-};
+    bool m_has_sample_offset = false;
+    bool m_playable = false;
 
+    uint32_t m_type = 0;
+
+    int64_t *m_field_offset = nullptr;
+    uint32_t m_field_offset_num = 0;
+};
+using weak_atom = std::weak_ptr<atom_obj>;
+using shared_atom = std::shared_ptr<atom_obj>;
 
 #endif //MP4VIEWER_ATOM_OBJ_H

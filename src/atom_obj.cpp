@@ -26,6 +26,17 @@ atom_obj::atom_obj(const char *name, uint32_t head_size, uint64_t size, uint64_t
     if (name) m_name = name;
     m_size = size;
     m_offset = offset;
+    if (!m_name.empty() && m_name.size() <= 4) {
+        auto p = name;
+        int i = 3;
+        m_type = 0;
+        while (*p) {
+            auto v = ((uint32_t)(*p) << i * 8);
+            m_type |= v;
+            i --;
+            p ++;
+        }
+    }
 }
 
 void atom_obj::add_atom(const std::shared_ptr<atom_obj>& obj) {
@@ -114,6 +125,10 @@ void atom_obj::get_current_field_index(uint32_t &begin, uint32_t &end) {
 
 atom_obj::~atom_obj() {
 //    MM_LOG_INFO("destruct atom %s", m_name.c_str());
+    if (m_field_offset) {
+        delete [] m_field_offset;
+        m_field_offset = nullptr;
+    }
 }
 
 void atom_obj::add_field_array(const char * name, int row_num, int column_num,
@@ -147,6 +162,21 @@ const std::string &atom_obj::get_field_value_str(uint32_t index) {
         return m_field_array->value(index);
     } else {
         return m_fields[index]->value();
+    }
+}
+
+void atom_obj::set_field_offset(int64_t *data, uint32_t num) {
+    MM_LOG_INFO("set atom %s offset array(%u)", m_name.c_str(), num);
+    m_field_offset = data;
+    m_field_offset_num = num;
+}
+
+int64_t *atom_obj::get_field_value_int(uint32_t index) {
+    if (m_field_array) {
+        return m_field_array->get_values(index);
+    } else {
+        MM_LOG_ERROR("logic error, should not reach here");
+        return nullptr;
     }
 }
 
@@ -193,7 +223,8 @@ atom_field::atom_field(const char *name, const uint8_t *value, uint32_t size) {
 
 }
 
-atom_fields::atom_fields(const char * name, int row_num, int column_num, const char * names, int64_t *data) {
+atom_fields::atom_fields(const char * name, uint32_t row_num, uint32_t column_num,
+                         const char * names, int64_t *data) {
     if (names)
         split(names, ',', m_column_name);
     m_column_num = column_num;
@@ -209,7 +240,7 @@ atom_fields::~atom_fields() {
     }
 }
 
-const char *atom_fields::get_column_name(int column) {
+const char *atom_fields::get_column_name(uint32_t column) {
     if (column >= m_column_num) {
         MM_LOG_ERROR("invalid column index(%d), total column number:%d", column, m_column_num);
         return nullptr;
@@ -228,7 +259,7 @@ const char *atom_fields::get_name(uint32_t row) {
     return it->second.c_str();
 }
 
-int64_t atom_fields::get_value(int column, int row) {
+int64_t atom_fields::get_value(uint32_t column, uint32_t row) {
     if (column >= m_column_num) {
         MM_LOG_ERROR("invalid column index(%d), total column number:%d", column, m_column_num);
         return 0;
@@ -240,7 +271,7 @@ int64_t atom_fields::get_value(int column, int row) {
     return m_data[row * m_column_num + column];
 }
 
-int64_t *atom_fields::get_values(int row) {
+int64_t *atom_fields::get_values(uint32_t row) {
     if (row >= m_row_num) {
         MM_LOG_ERROR("invalid row index(%d), total row number:%d", row, m_row_num);
         return nullptr;

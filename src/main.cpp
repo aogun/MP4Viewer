@@ -3,9 +3,8 @@
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"
-#include "imgui_impl_dx10.h"
-#include <d3d10_1.h>
-#include <d3d10.h>
+#include "imgui_impl_dx11.h"
+#include <d3d11.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 #include <tchar.h>
@@ -15,13 +14,16 @@
 #include <sstream>
 #include "drag_file_win32.h"
 #include "../data/resource.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #pragma comment(linker,"/subsystem:\"Windows\" /entry:\"mainCRTStartup\"")
 
 // Data
-static ID3D10Device*            g_pd3dDevice = nullptr;
-static IDXGISwapChain*          g_pSwapChain = nullptr;
-static ID3D10RenderTargetView*  g_mainRenderTargetView = nullptr;
+static ID3D11Device*            g_pd3dDevice = NULL;
+static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
+static IDXGISwapChain*          g_pSwapChain = NULL;
+static ID3D11RenderTargetView*  g_mainRenderTargetView = NULL;
 
 // Forward declarations of helper functions
 bool CreateDeviceD3D(HWND hWnd);
@@ -115,7 +117,7 @@ int main(int, char**)
 #endif
     setlocale(LC_ALL, "en_US.utf8");
     // Create application window
-    ImGui_ImplWin32_EnableDpiAwareness();
+    //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr),
                       nullptr, nullptr, nullptr, nullptr, _T("MP4Viewer"), nullptr };
 
@@ -150,6 +152,11 @@ int main(int, char**)
         }
     }
 
+    char sz[64];
+    auto ret = GetEnvironmentVariable("MP4VIEW_DEBUG", sz, 64);
+    if (ret > 0 && atoi(sz) != 0) {
+        window.enable_debug();
+    }
     // Show the window
     ::ShowWindow(hwnd, SW_SHOWDEFAULT);
     ::UpdateWindow(hwnd);
@@ -169,7 +176,7 @@ int main(int, char**)
 
     // Setup Platform/Renderer bindings
     ImGui_ImplWin32_Init(hwnd);
-    ImGui_ImplDX10_Init(g_pd3dDevice);
+    ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
     window.init();
 
@@ -206,33 +213,34 @@ int main(int, char**)
         window.before_draw();
         if (window.needs_rebuild_font()) {
             io.Fonts->Build();
-            ImGui_ImplDX10_InvalidateDeviceObjects();
+            ImGui_ImplDX11_InvalidateDeviceObjects();
         }
 
         // Start the Dear ImGui frame
-        ImGui_ImplDX10_NewFrame();
+        ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
         window.draw();
         // Rendering
         ImGui::Render();
-        g_pd3dDevice->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
-        g_pd3dDevice->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
-        ImGui_ImplDX10_RenderDrawData(ImGui::GetDrawData());
+        const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
+        g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
+        g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-        g_pSwapChain->Present(1, 0); // Present with vsync
-        //g_pSwapChain->Present(0, 0); // Present without vsync
-        if (!window.is_running()) break;
+        // Update and Render additional Platform Windows
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
         }
 
+        g_pSwapChain->Present(1, 0); // Present with vsync
+        //g_pSwapChain->Present(0, 0); // Present without vsync
     }
-    RevokeDragDrop(hwnd);
 
-    ImGui_ImplDX10_Shutdown();
+    // Cleanup
+    ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
 
@@ -267,9 +275,10 @@ bool CreateDeviceD3D(HWND hWnd)
     sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
     UINT createDeviceFlags = 0;
-    //createDeviceFlags |= D3D10_CREATE_DEVICE_DEBUG;
-    if (D3D10CreateDeviceAndSwapChain(nullptr, D3D10_DRIVER_TYPE_HARDWARE, nullptr,
-                                      createDeviceFlags, D3D10_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice) != S_OK)
+    //createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+    D3D_FEATURE_LEVEL featureLevel;
+    const D3D_FEATURE_LEVEL featureLevelArray[2] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_0, };
+    if (D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &featureLevel, &g_pd3dDeviceContext) != S_OK)
         return false;
 
     CreateRenderTarget();
@@ -279,22 +288,27 @@ bool CreateDeviceD3D(HWND hWnd)
 void CleanupDeviceD3D()
 {
     CleanupRenderTarget();
-    if (g_pSwapChain) { g_pSwapChain->Release(); g_pSwapChain = nullptr; }
-    if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = nullptr; }
+    if (g_pSwapChain) { g_pSwapChain->Release(); g_pSwapChain = NULL; }
+    if (g_pd3dDeviceContext) { g_pd3dDeviceContext->Release(); g_pd3dDeviceContext = NULL; }
+    if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = NULL; }
 }
 
 void CreateRenderTarget()
 {
-    ID3D10Texture2D* pBackBuffer;
+    ID3D11Texture2D* pBackBuffer;
     g_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
-    g_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &g_mainRenderTargetView);
+    g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_mainRenderTargetView);
     pBackBuffer->Release();
 }
 
 void CleanupRenderTarget()
 {
-    if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = nullptr; }
+    if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = NULL; }
 }
+
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED 0x02E0 // From Windows SDK 8.1+ headers
+#endif
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -307,23 +321,95 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     switch (msg)
     {
-        case WM_SIZE:
-            if (g_pd3dDevice != nullptr && wParam != SIZE_MINIMIZED)
-            {
-                CleanupRenderTarget();
-                g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
-                CreateRenderTarget();
-            }
+    case WM_SIZE:
+        if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
+        {
+            CleanupRenderTarget();
+            g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
+            CreateRenderTarget();
+        }
+        return 0;
+    case WM_SYSCOMMAND:
+        if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
             return 0;
-        case WM_SYSCOMMAND:
-            if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
-                return 0;
-            break;
-        case WM_DESTROY:
-            ::PostQuitMessage(0);
-            return 0;
-        default:
-            break;
+        break;
+    case WM_DESTROY:
+        ::PostQuitMessage(0);
+        return 0;
+    case WM_DPICHANGED:
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DpiEnableScaleViewports)
+        {
+            //const int dpi = HIWORD(wParam);
+            //printf("WM_DPICHANGED to %d (%.0f%%)\n", dpi, (float)dpi / 96.0f * 100.0f);
+            const RECT* suggested_rect = (RECT*)lParam;
+            ::SetWindowPos(hWnd, NULL, suggested_rect->left, suggested_rect->top, suggested_rect->right - suggested_rect->left, suggested_rect->bottom - suggested_rect->top, SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+        break;
     }
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+// Simple helper function to load an image into a DX11 texture with common settings
+bool load_texture_from_memory(const uint8_t * image_data, void ** out_srv,
+                              int width, int height)
+{
+    // Load from disk into a raw RGBA buffer
+
+    // Create texture
+    D3D11_TEXTURE2D_DESC desc;
+    ZeroMemory(&desc, sizeof(desc));
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    desc.CPUAccessFlags = 0;
+
+    ID3D11Texture2D *pTexture = NULL;
+    D3D11_SUBRESOURCE_DATA subResource;
+    subResource.pSysMem = image_data;
+    subResource.SysMemPitch = desc.Width * 4;
+    subResource.SysMemSlicePitch = 0;
+    g_pd3dDevice->CreateTexture2D(&desc, &subResource, &pTexture);
+
+    // Create texture view
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    ZeroMemory(&srvDesc, sizeof(srvDesc));
+    srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = desc.MipLevels;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    g_pd3dDevice->CreateShaderResourceView(pTexture, &srvDesc,
+                                           (ID3D11ShaderResourceView**)out_srv);
+    pTexture->Release();
+
+    return true;
+}
+
+void free_texture(void * texture) {
+    if (!texture) return;
+    auto obj = (ID3D11ShaderResourceView*)texture;
+    obj->Release();
+}
+// Simple helper function to load an image into a DX11 texture with common settings
+bool load_texture_from_file(const char* filename, void** out_srv,
+                            int* out_width, int* out_height)
+{
+    // Load from disk into a raw RGBA buffer
+    int image_width = 0;
+    int image_height = 0;
+    unsigned char* image_data = stbi_load(filename, &image_width, &image_height, NULL, 4);
+    if (image_data == NULL)
+        return false;
+
+    auto ret = load_texture_from_memory(image_data, out_srv, image_width, image_height);
+
+    *out_width = image_width;
+    *out_height = image_height;
+    stbi_image_free(image_data);
+
+    return ret;
 }

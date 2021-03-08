@@ -306,8 +306,8 @@ void main_window::draw() {
     m_field_window.set_top(menu_size.y);
     m_field_window.draw();
 
-//    bool show = true;
-//    ImGui::ShowDemoWindow(&show);
+    if (m_debug)
+        ImGui::ShowDemoWindow(&m_debug);
 
     if (m_open_log_window) {
         ImGui::SetNextWindowSize(ImVec2(size.x, 400), ImGuiCond_FirstUseEver);
