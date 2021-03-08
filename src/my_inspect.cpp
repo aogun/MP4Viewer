@@ -173,70 +173,140 @@ void my_inspect::AddFieldArray(AP4_Size column_num, AP4_Size row_num,
 }
 
 void my_inspect::Finished() {
+    std::shared_ptr<mp4_codec_info> tmp;
     for (auto &atom : m_atoms) {
-        process_atom(atom);
+        process_atom(atom, tmp);
     }
 }
 
-void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom) {
+void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom,
+                              std::shared_ptr<mp4_codec_info> codec) {
     MM_LOG_INFO("process atom:%s, type:0x%x", atom->get_name(), atom->get_type());
-    if (atom->get_type() == ATOM_TYPE_STSZ) {
-        int64_t * offset_array = nullptr;
-        MM_LOG_INFO("process stsz atom");
-        auto parent = atom->parent();
-        do {
-            if (parent.owner_before(weak_atom{})) {
-                MM_LOG_ERROR("stsz no parent");
-                break;
-            }
-            auto stsd = parent.lock();
-            if (!stsd) {
-                MM_LOG_ERROR("get stsz parent stsd failed");
-                break;
-            }
-            shared_atom stco_atom, stsc_atom, co64_atom;
-            for (const auto & sub_atom: *stsd->atoms()) {
-                switch (sub_atom->get_type()) {
-                    case ATOM_TYPE_STSC:
-                        stsc_atom = sub_atom;
-                        break;
-                    case ATOM_TYPE_STCO:
-                        stco_atom = sub_atom;
-                        break;
-                    case ATOM_TYPE_CO64:
-                        co64_atom = sub_atom;
-                        break;
-                    default:
-                        break;
+    switch (atom->get_type()) {
+        case ATOM_TYPE_STSZ:{
+            process_stsz(atom, codec);
+            break;
+        }
+        case ATOM_TYPE_AVCC:{
+            if (codec) {
+                codec->m_type = MP4_CODEC_H264;
+                auto fields = atom->fields();
+                std::shared_ptr<atom_field> sps, pps;
+                int nalu_length_size = 0;
+                for (const auto &f : *fields) {
+                    if (f->name() == "Sequence Parameter" && f->data()->value) {
+                        sps = f;
+                    } else if (f->name() == "Picture Parameter" && f->data()->value) {
+                        pps = f;
+                    } else if (f->name() == "NALU Length Size") {
+                        nalu_length_size = atoi(f->get_value());
+                    }
+                }
+                if (sps && pps && nalu_length_size && nalu_length_size <=4) {
+                    auto data_len = sps->data()->size + pps->data()->size + 2 * nalu_length_size;
+                    auto data = new uint8_t[data_len];
+                    int offset = 0;
+                    uint8_t start_code[4] = {0, 0, 0, 1};
+                    memcpy(data + offset, start_code, nalu_length_size);
+                    offset += nalu_length_size;
+                    memcpy(data + offset, sps->data()->value, sps->data()->size);
+                    offset += sps->data()->size;
+                    memcpy(data + offset, start_code, nalu_length_size);
+                    offset += nalu_length_size;
+                    memcpy(data + offset, pps->data()->value, pps->data()->size);
+                    codec->m_codec_data = std::make_shared<mp4_buffer>(data, data_len, false);
                 }
             }
-            if (!stco_atom || (!stsc_atom && !co64_atom)) {
-                MM_LOG_ERROR("missing atom");
-                break;
+            break;
+        }
+        case ATOM_TYPE_HVCC:{
+            if (codec) codec->m_type = MP4_CODEC_HEVC;
+            break;
+        }
+        case ATOM_TYPE_TRAK:{
+            auto info = std::make_shared<mp4_codec_info>();
+            if (atom->has_atoms()) {
+                for (auto &sub_atom : *atom->atoms()) {
+                    process_atom(sub_atom, info);
+                }
             }
-            std::shared_ptr<atom_fields> stco;
-            auto stsz = atom->field_array();
-            if (!stsz || stsz->rows() == 0) {
-                MM_LOG_ERROR("no data in stsz atom");
-                break;
+            return;
+        }
+        default:{
+            break;
+        }
+    }
+    if (atom->has_atoms()) {
+        for (auto &sub_atom : *atom->atoms()) {
+            process_atom(sub_atom, codec);
+        }
+    }
+}
+
+void my_inspect::process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<mp4_codec_info> codec) {
+
+    int64_t * offset_array = nullptr;
+    MM_LOG_INFO("process stsz atom");
+    auto parent = atom->parent();
+    do {
+        if (parent.owner_before(weak_atom{})) {
+            MM_LOG_ERROR("stsz no parent");
+            break;
+        }
+        auto stsd = parent.lock();
+        if (!stsd) {
+            MM_LOG_ERROR("get stsz parent stsd failed");
+            break;
+        }
+        shared_atom stco_atom, stsc_atom, co64_atom;
+        for (const auto & sub_atom: *stsd->atoms()) {
+            switch (sub_atom->get_type()) {
+                case ATOM_TYPE_STSC:
+                    stsc_atom = sub_atom;
+                    break;
+                case ATOM_TYPE_STCO:
+                    stco_atom = sub_atom;
+                    break;
+                case ATOM_TYPE_CO64:
+                    co64_atom = sub_atom;
+                    break;
+                default:
+                    break;
             }
-            if (stco_atom)
-                stco = stco_atom->field_array();
-            else
-                stco = co64_atom->field_array();
-            if (!stco || stco->rows() == 0) {
-                MM_LOG_ERROR("no data in stsc|co64 atom");
-                break;
-            }
-            auto stsc = stsc_atom->field_array();
-            if (!stsc || stsc->rows() == 0) {
-                MM_LOG_ERROR("no data in stsc atom");
-                break;
-            }
-            offset_array = new int64_t[stsz->rows()];
-            uint32_t chunk_index = 0;
-            uint32_t sample_index = 0;
-            bool stop = false;
+        }
+        if (!stsc_atom || (!stco_atom && !co64_atom)) {
+            MM_LOG_ERROR("missing atom");
+            break;
+        }
+        std::shared_ptr<atom_fields> stco;
+        auto stsz = atom->field_array();
+        if (!stsz || stsz->rows() == 0) {
+            MM_LOG_ERROR("no data in stsz atom");
+            break;
+        }
+        if (stco_atom)
+            stco = stco_atom->field_array();
+        else
+            stco = co64_atom->field_array();
+        if (!stco || stco->rows() == 0) {
+            MM_LOG_ERROR("no data in stsc|co64 atom");
+            break;
+        }
+        auto stsc = stsc_atom->field_array();
+        if (!stsc || stsc->rows() == 0) {
+            MM_LOG_ERROR("no data in stsc atom");
+            break;
+        }
+        offset_array = new int64_t[stsz->rows()];
+        uint32_t chunk_index = 0;
+        uint32_t sample_index = 0;
+        bool stop = false;
+        if (stsc->rows() == 1 && stsc->get_value(3, 0) == 1) {
+            MM_LOG_INFO("sample per chunk is 1");
+            auto size = stco->rows() > stsz->rows() ? stsz->rows() : stco->rows();
+            sample_index = size;
+            memcpy(offset_array, stco->data(), size * sizeof(int64_t));
+        } else {
             for (uint32_t i = 0; i < stsc->rows(); i ++) {
                 auto data = stsc->get_values(i);
                 if (chunk_index + 1 != data[0]) {
@@ -273,19 +343,14 @@ void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom) {
                 }
                 if (stop) break;
             }
-            if (sample_index >= 1) {
-                atom->set_field_offset(offset_array, sample_index);
-                offset_array = nullptr;
-            }
-        } while (false);
-        if (offset_array) {
-            delete[] offset_array;
+        }
+        if (sample_index >= 1) {
+            atom->set_field_offset(offset_array, sample_index);
             offset_array = nullptr;
         }
-    }
-    if (atom->has_atoms()) {
-        for (auto &sub_atom : *atom->atoms()) {
-            process_atom(sub_atom);
-        }
+    } while (false);
+    if (offset_array) {
+        delete[] offset_array;
+        offset_array = nullptr;
     }
 }

@@ -180,6 +180,10 @@ int64_t *atom_obj::get_field_value_int(uint32_t index) {
     }
 }
 
+void atom_obj::set_codec_info(std::shared_ptr<mp4_codec_info> codec) {
+    m_codec_info = std::move(codec);
+}
+
 atom_field::atom_field(const char *name, const char *value) {
     if (name) m_name = name;
     m_value = value;
@@ -202,6 +206,8 @@ atom_field::atom_field(const char *name, uint64_t value) {
 
 atom_field::atom_field(const char *name, const uint8_t *value, uint32_t size) {
     if (name) m_name = name;
+
+    m_data = std::make_shared<mp4_buffer>((uint8_t*)value, size);
 
     char sz[128];
     char *p = sz;
@@ -299,4 +305,15 @@ const std::string &atom_fields::value(uint32_t row) {
         return sz;
     }
     return it->second;
+}
+
+mp4_buffer::mp4_buffer(uint8_t *value, uint32_t size, bool copy) : value(value), size(size) {
+    if (copy) {
+        this->value = new uint8_t[size];
+        memcpy(this->value, value, size);
+    }
+}
+
+mp4_buffer::~mp4_buffer() {
+    delete[] value;
 }

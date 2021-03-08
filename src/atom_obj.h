@@ -9,6 +9,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include "common.h"
 
 #define MAX_FIELD_NUM_IN_PAGE       3000
 
@@ -18,6 +19,21 @@
 //    FIELD_TYPE_FLOAT,
 //    FIELD_TYPE_DATA,
 //} atom_field_value_type;
+
+class mp4_buffer {
+public:
+    mp4_buffer(uint8_t *value, uint32_t size, bool copy = true);
+
+    virtual ~mp4_buffer();
+
+    uint8_t *value = nullptr;
+    uint32_t size = 0;
+};
+class mp4_codec_info {
+public:
+    mp4_codec_type_t m_type = MP4_CODEC_UNKNOWN;
+    std::shared_ptr<mp4_buffer> m_codec_data;
+};
 
 class atom_field {
 public:
@@ -31,9 +47,11 @@ public:
 
     const std::string &name() { return m_name; }
     const std::string &value() { return m_value; }
+    std::shared_ptr<mp4_buffer> &data() { return m_data; }
 private:
     std::string m_name;
     std::string m_value;
+    std::shared_ptr<mp4_buffer> m_data;
 };
 
 class atom_fields {
@@ -108,6 +126,8 @@ public:
     void get_field_index(uint32_t page_index, uint32_t &begin, uint32_t &end);
     void get_current_field_index(uint32_t &begin, uint32_t &end);
 
+    void set_codec_info(std::shared_ptr<mp4_codec_info> codec);
+    std::shared_ptr<mp4_codec_info> codec_info() { return m_codec_info; }
 private:
     std::string m_name;
     std::string m_digest;
@@ -128,6 +148,7 @@ private:
 
     int64_t *m_field_offset = nullptr;
     uint32_t m_field_offset_num = 0;
+    std::shared_ptr<mp4_codec_info> m_codec_info;
 };
 using weak_atom = std::weak_ptr<atom_obj>;
 using shared_atom = std::shared_ptr<atom_obj>;

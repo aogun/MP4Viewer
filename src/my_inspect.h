@@ -8,6 +8,7 @@
 #include "Ap4.h"
 #include "atom_obj.h"
 #include "mm_log.h"
+#include "common.h"
 
 class my_inspect : public AP4_AtomInspector {
 public:
@@ -39,7 +40,8 @@ public:
 
     void Finished();
 private:
-    void process_atom(std::shared_ptr<atom_obj> &atom);
+    void process_atom(std::shared_ptr<atom_obj> &atom, std::shared_ptr<mp4_codec_info> codec);
+    void process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<mp4_codec_info> codec);
     std::vector<std::shared_ptr<atom_obj>> m_atoms;
     std::shared_ptr<atom_obj> m_current;
 };
