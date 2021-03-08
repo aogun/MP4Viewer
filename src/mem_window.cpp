@@ -83,7 +83,7 @@ void mem_window::check_data() {
 
     auto f = m_manager->current();
     if (!f) {
-        m_highlight_offset = 0;
+        m_highlight_offset = -1;
         m_highlight_size = 0;
         m_size = 0;
         m_buffer_offset = 0;
@@ -93,11 +93,11 @@ void mem_window::check_data() {
         return;
     }
 
-    uint64_t offset;
+    int64_t offset;
     uint32_t size;
     f->get_current(offset, size);
-    if (size == 0) {
-        m_highlight_offset = 0;
+    if (size == 0 || offset < 0) {
+        m_highlight_offset = -1;
         m_highlight_size = 0;
         m_size = 0;
         m_buffer_offset = 0;
@@ -123,7 +123,7 @@ void mem_window::check_data() {
         } else {
             // file change, reload buffer
             reload = true;
-            m_highlight_offset = 0;
+            m_highlight_offset = -1;
             m_highlight_size = 0;
             m_size = 0;
             m_buffer_offset = 0;

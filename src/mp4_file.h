@@ -23,14 +23,15 @@ public:
     std::shared_ptr<my_inspect> get_inspect() { return m_inspect; }
     std::shared_ptr<atom_obj> current() { return m_selected; }
     void select_atom(const std::shared_ptr<atom_obj>& obj);
-    void select_data(uint64_t offset, uint32_t size);
+    void select_data(int64_t offset, uint32_t size);
 
     const char * get_short_name() { return m_short_name.c_str(); }
 
     FILE * get_handle();
     const char * get_error() { return m_error.c_str(); }
+    int64_t offset() { return m_offset; }
 
-    void get_current(uint64_t &offset, uint32_t &size) const { offset = m_offset; size = m_size; }
+    void get_current(int64_t &offset, uint32_t &size) const { offset = m_offset; size = m_size; }
 private:
     std::string m_name;
     std::string m_short_name;
@@ -40,7 +41,7 @@ private:
     FILE * m_handle = nullptr;
     std::string m_error;
 
-    uint64_t m_offset = 0;
+    int64_t m_offset = -1;
     uint32_t m_size = 0;
 };
 

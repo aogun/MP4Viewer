@@ -45,7 +45,7 @@ private:
     char * m_buffer = nullptr;
     int m_size = 0;
 
-    uint64_t m_highlight_offset = 0;
+    int64_t m_highlight_offset = -1;
     uint32_t m_highlight_size = 0;
     std::string m_error;
     char m_title[128];

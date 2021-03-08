@@ -72,8 +72,8 @@ void mp4_file::select_atom(const std::shared_ptr<atom_obj>& obj) {
     m_size = obj->get_size();
 }
 
-void mp4_file::select_data(uint64_t offset, uint32_t size) {
-    MM_LOG_INFO("select data offset %llu, size %u", offset, size);
+void mp4_file::select_data(int64_t offset, uint32_t size) {
+    MM_LOG_INFO("select data offset %lli, size %u", offset, size);
     m_offset = offset;
     m_size = size;
 }

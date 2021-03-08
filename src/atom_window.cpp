@@ -68,7 +68,9 @@ void atom_window::set_top(uint32_t top) {
 void atom_window::show_atom(const std::shared_ptr<atom_obj>& atom, uint32_t flags) {
     uint32_t old_flags = flags;
     if (!atom->has_atoms()) flags |= ImGuiTreeNodeFlags_Leaf;
-    if (m_selected_atom == atom->get_offset()) flags |= ImGuiTreeNodeFlags_Selected;
+    auto offset = m_manager->current()->offset();
+    if (offset >= 0 && offset == atom->get_offset())
+        flags |= ImGuiTreeNodeFlags_Selected;
     if (ImGui::TreeNodeEx(atom->get_digest(), flags)) {
         if (ImGui::IsItemClicked()) {
             MM_LOG_INFO("set atom %s as selected node, offset:%llu", atom->get_name(), atom->get_offset());
