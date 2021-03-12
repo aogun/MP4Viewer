@@ -17,7 +17,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#ifndef _DEBUG
+#ifndef CONSOLE_MODE
 #pragma comment(linker,"/subsystem:\"Windows\" /entry:\"mainCRTStartup\"")
 #endif
 // Data
