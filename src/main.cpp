@@ -17,8 +17,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#ifndef _DEBUG
 #pragma comment(linker,"/subsystem:\"Windows\" /entry:\"mainCRTStartup\"")
-
+#endif
 // Data
 static ID3D11Device*            g_pd3dDevice = NULL;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
@@ -349,6 +350,61 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+// Simple helper function to load an image into a DX11 texture with common settings
+bool load_texture_from_memory_win(const uint8_t * image_data, void ** out_srv,
+                              int width, int height, mp4_raw_type_t type)
+{
+    DXGI_FORMAT format;
+    // Load from disk into a raw RGBA buffer
+    if (type == MP4_RAW_R8G8B8A8) {
+        format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    } else if (type == MP4_RAW_I420) {
+        format = DXGI_FORMAT_420_OPAQUE;
+    } else {
+        MM_LOG_ERROR("invalid raw video type");
+        return false;
+    }
+    // Create texture
+    D3D11_TEXTURE2D_DESC desc;
+    ZeroMemory(&desc, sizeof(desc));
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = format;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    desc.CPUAccessFlags = 0;
+
+    ID3D11Texture2D *pTexture = NULL;
+    D3D11_SUBRESOURCE_DATA subResource;
+    subResource.pSysMem = image_data;
+    subResource.SysMemPitch = desc.Width * 4;
+    subResource.SysMemSlicePitch = 0;
+    auto ret = g_pd3dDevice->CreateTexture2D(&desc, &subResource, &pTexture);
+    if (ret != S_OK) {
+        MM_LOG_ERROR("CreateTexture2D failed, error: 0x%x", ret);
+        return false;
+    }
+
+    // Create texture view
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    ZeroMemory(&srvDesc, sizeof(srvDesc));
+    srvDesc.Format = format;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = desc.MipLevels;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    ret = g_pd3dDevice->CreateShaderResourceView(pTexture, &srvDesc,
+                                                 (ID3D11ShaderResourceView **) out_srv);
+    pTexture->Release();
+    if (ret != S_OK) {
+        MM_LOG_ERROR("CreateShaderResourceView failed, error: 0x%x", ret);
+        return false;
+    }
+
+    return true;
+}
 // Simple helper function to load an image into a DX11 texture with common settings
 bool load_texture_from_memory(const uint8_t * image_data, void ** out_srv,
                               int width, int height)

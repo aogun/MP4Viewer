@@ -10,6 +10,7 @@
 #include "my_inspect.h"
 #include <memory>
 #include "mm_log.h"
+#include "mp4_decoder.h"
 
 class mp4_file {
 public:
@@ -32,6 +33,9 @@ public:
     int64_t offset() { return m_offset; }
 
     void get_current(int64_t &offset, uint32_t &size) const { offset = m_offset; size = m_size; }
+
+    std::shared_ptr<mp4_video_dec_task> show(std::shared_ptr<atom_obj> atom, uint32_t index,
+                                             int64_t offset, uint32_t size);
 private:
     std::string m_name;
     std::string m_short_name;
@@ -43,6 +47,8 @@ private:
 
     int64_t m_offset = -1;
     uint32_t m_size = 0;
+
+    std::shared_ptr<mp4_decoder> m_decoder;
 };
 
 

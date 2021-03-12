@@ -3,6 +3,8 @@
 //
 
 #include "field_window.h"
+
+#include <utility>
 #include "res.h"
 #include "imgui_ext.h"
 
@@ -62,6 +64,9 @@ void field_window::draw() {
     if (!m_zoom_in) {
         m_zoom_in = get_inner_texture(ID_RES_IMAGE_ZOOM_IN);
     }
+    if (!m_play_icon) {
+        m_play_icon = get_inner_texture(ID_RES_IMAGE_PLAY);
+    }
     if (!m_manager->m_open_field_window) {
         return;
     }
@@ -82,6 +87,7 @@ void field_window::draw() {
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.);
             auto pos = ImGui::GetMainViewport()->WorkPos;
+            bool can_play = atom->has_codec_info() && atom->get_sync_array_size();
             pos.y -= m_top;
             pos.x += 400;
             ImGui::SetNextWindowPos(pos, ImGuiCond_FirstUseEver);
@@ -213,12 +219,21 @@ void field_window::draw() {
                             }
                             ImGui::InputTextMultiline(label, (char*)value.c_str(), value.size(),
                                                       text_size, ImGuiInputTextFlags_ReadOnly);
-                            if (atom->get_field_offset_num() > index && value_width > 100 && m_zoom_in) {
+                            if (atom->get_field_offset_num() > index && value_width > text_height * 2 && m_zoom_in) {
                                 ImGui::SameLine();
                                 sprintf(label, "##%d-detail", i);
                                 if (ImageButtonEx(label, m_zoom_in, ImVec2(text_height, text_height))) {
                                     m_manager->current()->select_data(atom->get_field_offset(field_index),
                                                                       *atom->get_field_value_int(field_index));
+                                }
+                                if (can_play) {
+                                    ImGui::SameLine();
+                                    sprintf(label, "##%d-show", i);
+                                    if (ImageButtonEx(label, m_play_icon, ImVec2(text_height, text_height))) {
+                                        show_video_frame(atom, i + begin,
+                                                         atom->get_field_offset(field_index),
+                                                         *atom->get_field_value_int(field_index));
+                                    }
                                 }
                             }
                             ImGui::NextColumn();
@@ -238,4 +253,11 @@ void field_window::draw() {
         }
     } while (false);
 
+}
+
+void field_window::show_video_frame(std::shared_ptr<atom_obj> atom, uint32_t index,
+                                    int64_t offset, uint32_t size) {
+
+    auto task = m_manager->current()->show(std::move(atom), index, offset, size);
+    m_manager->set_video_task(task);
 }

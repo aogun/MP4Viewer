@@ -20,20 +20,8 @@
 //    FIELD_TYPE_DATA,
 //} atom_field_value_type;
 
-class mp4_buffer {
-public:
-    mp4_buffer(uint8_t *value, uint32_t size, bool copy = true);
 
-    virtual ~mp4_buffer();
 
-    uint8_t *value = nullptr;
-    uint32_t size = 0;
-};
-class mp4_codec_info {
-public:
-    mp4_codec_type_t m_type = MP4_CODEC_UNKNOWN;
-    std::shared_ptr<mp4_buffer> m_codec_data;
-};
 
 class atom_field {
 public:
@@ -113,6 +101,11 @@ public:
     int64_t * get_field_offset_array() { return m_field_offset; }
     int64_t get_field_offset(uint32_t index) { return m_field_offset[index]; }
 
+    void set_sync_array(uint32_t * data, uint32_t num);
+    uint32_t * get_sync_array() { return m_sync_array; }
+    uint32_t get_sync_value(uint32_t index) { return m_sync_array[index]; }
+    uint32_t get_sync_array_size() { return m_sync_array_size; }
+
     const char * get_field_name(uint32_t index);
     const char * get_field_value(uint32_t index);
     int64_t * get_field_value_int(uint32_t index);
@@ -128,6 +121,7 @@ public:
 
     void set_codec_info(std::shared_ptr<mp4_codec_info> codec);
     std::shared_ptr<mp4_codec_info> codec_info() { return m_codec_info; }
+    bool has_codec_info() { return m_codec_info ? true : false; }
 private:
     std::string m_name;
     std::string m_digest;
@@ -149,6 +143,9 @@ private:
     int64_t *m_field_offset = nullptr;
     uint32_t m_field_offset_num = 0;
     std::shared_ptr<mp4_codec_info> m_codec_info;
+
+    uint32_t *m_sync_array = nullptr;
+    uint32_t m_sync_array_size = 0;
 };
 using weak_atom = std::weak_ptr<atom_obj>;
 using shared_atom = std::shared_ptr<atom_obj>;

@@ -129,6 +129,10 @@ atom_obj::~atom_obj() {
         delete [] m_field_offset;
         m_field_offset = nullptr;
     }
+    if (m_sync_array) {
+        delete[] m_sync_array;
+        m_sync_array = nullptr;
+    }
 }
 
 void atom_obj::add_field_array(const char * name, int row_num, int column_num,
@@ -182,6 +186,11 @@ int64_t *atom_obj::get_field_value_int(uint32_t index) {
 
 void atom_obj::set_codec_info(std::shared_ptr<mp4_codec_info> codec) {
     m_codec_info = std::move(codec);
+}
+
+void atom_obj::set_sync_array(uint32_t *data, uint32_t num) {
+    m_sync_array = data;
+    m_sync_array_size = num;
 }
 
 atom_field::atom_field(const char *name, const char *value) {
@@ -305,15 +314,4 @@ const std::string &atom_fields::value(uint32_t row) {
         return sz;
     }
     return it->second;
-}
-
-mp4_buffer::mp4_buffer(uint8_t *value, uint32_t size, bool copy) : value(value), size(size) {
-    if (copy) {
-        this->value = new uint8_t[size];
-        memcpy(this->value, value, size);
-    }
-}
-
-mp4_buffer::~mp4_buffer() {
-    delete[] value;
 }

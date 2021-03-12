@@ -21,15 +21,23 @@ public:
 
     std::map<std::string, std::shared_ptr<mp4_file>> * files() { return &m_files; }
 
+    void set_video_task(std::shared_ptr<mp4_video_dec_task> task) {
+        m_cur_video_task = task;
+        m_open_video_window = true;
+    }
+    std::shared_ptr<mp4_video_dec_task> get_video_task() { return m_cur_video_task; }
+
     bool m_open_atom_window = true;
     bool m_open_field_window = true;
     bool m_open_mem_window = true;
+    bool m_open_video_window = false;
 private:
     void change_current(std::shared_ptr<mp4_file> next);
 
     std::map<std::string, std::shared_ptr<mp4_file>> m_files;
     std::shared_ptr<mp4_file> m_current;
 
+    std::shared_ptr<mp4_video_dec_task> m_cur_video_task;
 };
 
 

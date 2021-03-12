@@ -24,7 +24,7 @@ std::shared_ptr<mp4_file> mp4_manager::open(const char * path) {
     result = std::make_shared<mp4_file>();
     if (result->open(path)) {
         m_files[path] = result;
-        m_current = result;
+        change(path);
         return result;
     }
     return nullptr;
@@ -86,5 +86,8 @@ void mp4_manager::switch_next() {
 }
 
 void mp4_manager::change_current(std::shared_ptr<mp4_file> next) {
-    m_current = std::move(next);
+    if (m_current != next) {
+        m_current = std::move(next);
+        m_cur_video_task.reset();
+    }
 }

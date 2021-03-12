@@ -215,6 +215,8 @@ void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom,
                     offset += nalu_length_size;
                     memcpy(data + offset, pps->data()->value, pps->data()->size);
                     codec->m_codec_data = std::make_shared<mp4_buffer>(data, data_len, false);
+
+                    codec->m_nalu_length_size = nalu_length_size;
                 }
             }
             break;
@@ -246,6 +248,7 @@ void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom,
 void my_inspect::process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<mp4_codec_info> codec) {
 
     int64_t * offset_array = nullptr;
+    uint32_t * sync_array = nullptr;
     MM_LOG_INFO("process stsz atom");
     auto parent = atom->parent();
     do {
@@ -258,11 +261,14 @@ void my_inspect::process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<m
             MM_LOG_ERROR("get stsz parent stsd failed");
             break;
         }
-        shared_atom stco_atom, stsc_atom, co64_atom;
+        shared_atom stco_atom, stsc_atom, co64_atom, stss_atom;
         for (const auto & sub_atom: *stsd->atoms()) {
             switch (sub_atom->get_type()) {
                 case ATOM_TYPE_STSC:
                     stsc_atom = sub_atom;
+                    break;
+                case ATOM_TYPE_STSS:
+                    stss_atom = sub_atom;
                     break;
                 case ATOM_TYPE_STCO:
                     stco_atom = sub_atom;
@@ -274,8 +280,12 @@ void my_inspect::process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<m
                     break;
             }
         }
-        if (!stsc_atom || (!stco_atom && !co64_atom)) {
-            MM_LOG_ERROR("missing atom");
+        if (!stsc_atom) {
+            MM_LOG_ERROR("missing stsc atom");
+            break;
+        }
+        if (!stco_atom && !co64_atom) {
+            MM_LOG_ERROR("missing stco|co64 atom");
             break;
         }
         std::shared_ptr<atom_fields> stco;
@@ -283,6 +293,18 @@ void my_inspect::process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<m
         if (!stsz || stsz->rows() == 0) {
             MM_LOG_ERROR("no data in stsz atom");
             break;
+        }
+        int64_t * key_frames = nullptr;
+        std::shared_ptr<atom_fields> stss;
+        if (!stss_atom) {
+            MM_LOG_WARN("missing stss atom");
+        } else {
+            stss = stss_atom->field_array();
+            if (!stss || stss->rows() == 0) {
+                MM_LOG_WARN("no data in stss atom");
+            } else {
+                key_frames = stss->data();
+            }
         }
         if (stco_atom)
             stco = stco_atom->field_array();
@@ -297,6 +319,11 @@ void my_inspect::process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<m
             MM_LOG_ERROR("no data in stsc atom");
             break;
         }
+        if (codec->m_codec_data) {
+            atom->set_codec_info(codec);
+        }
+        sync_array = new uint32_t[stsz->rows()];
+        memset(sync_array, 0, sizeof(uint32_t) * stsz->rows());
         offset_array = new int64_t[stsz->rows()];
         uint32_t chunk_index = 0;
         uint32_t sample_index = 0;
@@ -319,7 +346,9 @@ void my_inspect::process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<m
                                  data[1], sample_index + 1);
                     break;
                 }
-                for (uint32_t j = 0; j < data[2]; j ++) { // chunk
+                auto chunk_num = data[2];
+                if (chunk_num == 0) chunk_num = 1;
+                for (uint32_t j = 0; j < chunk_num; j ++) { // chunk
                     if (chunk_index >= stco->rows()) {
                         MM_LOG_WARN("stco|co64 size %lli not enough, current chunk index:%u",
                                     stco->rows(), chunk_index);
@@ -345,12 +374,35 @@ void my_inspect::process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<m
             }
         }
         if (sample_index >= 1) {
+            if (key_frames) {
+                uint32_t j = 0;
+                uint32_t last_index = 0;
+                if (key_frames[0] == 1) {
+                    j ++;
+                } else {
+                    MM_LOG_WARN("invalid iframe start index:%u", key_frames[0]);
+                }
+                auto num = stss->rows();
+                for (int i = 0; i < sample_index; i ++) {
+                    if (key_frames[j] <= i && j < num - 1) {
+                        last_index = key_frames[j++] - 1;
+                    }
+                    sync_array[i] = last_index;
+                }
+
+                atom->set_sync_array(sync_array, sample_index);
+            }
             atom->set_field_offset(offset_array, sample_index);
             offset_array = nullptr;
+            sync_array = nullptr;
         }
     } while (false);
     if (offset_array) {
         delete[] offset_array;
         offset_array = nullptr;
+    }
+    if (sync_array) {
+        delete[] sync_array;
+        sync_array = nullptr;
     }
 }

@@ -5,6 +5,7 @@
 #include <cstdio>
 #include "windows.h"
 #include "version.h"
+#include "common.h"
 
 extern HWND g_hwnd;
 
@@ -22,4 +23,15 @@ void display_about()
             "About",
             MB_OK
     );
+}
+
+mp4_buffer::mp4_buffer(uint8_t *value, uint32_t size, bool copy) : value(value), size(size) {
+    if (copy) {
+        this->value = new uint8_t[size];
+        memcpy(this->value, value, size);
+    }
+}
+
+mp4_buffer::~mp4_buffer() {
+    delete[] value;
 }

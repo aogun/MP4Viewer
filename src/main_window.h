@@ -12,6 +12,7 @@
 #include "field_window.h"
 #include "mem_window.h"
 #include "dialog_window.h"
+#include "video_window.h"
 
 class main_window {
 public:
@@ -31,6 +32,7 @@ public:
 private:
     void ShowMenuFile();
     bool change_font(const char * name);
+    void add_big_font();
 
     bool m_open_log_window = false;
 
@@ -40,10 +42,13 @@ private:
     field_window m_field_window;
     mem_window m_mem_window;
     dialog_window m_dialog_window;
+    video_window m_video_window;
     std::map<std::string, ImFont *> m_fonts;
     std::map<std::string, std::string> m_font_path;
     std::string m_current_font;
     std::string m_changed_font;
+
+    ImFont * m_big_font = nullptr;
 
     bool m_render_fps = false;
     ImFont * m_fps_font = nullptr;

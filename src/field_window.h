@@ -20,11 +20,14 @@ public:
     virtual void draw();
 
 private:
+    void show_video_frame(std::shared_ptr<atom_obj> atom, uint32_t index,
+                          int64_t offset, uint32_t size);
     mp4_manager * m_manager = nullptr;
     uint32_t m_top = 0;
 
     int64_t m_selected = -1;
     void * m_zoom_in = nullptr;
+    void * m_play_icon = nullptr;
 };
 
 

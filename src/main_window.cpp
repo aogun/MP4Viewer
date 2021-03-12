@@ -155,7 +155,8 @@ void add_log(const char* fmt, ...) {
 
 
 main_window::main_window(mp4_manager* manager) :
-    m_manager(manager), m_atom_window(manager), m_field_window(manager), m_mem_window(manager) {
+    m_manager(manager), m_atom_window(manager), m_field_window(manager), m_mem_window(manager),
+    m_video_window(manager){
     m_font_path["default"] = "";
 }
 
@@ -306,6 +307,9 @@ void main_window::draw() {
     m_field_window.set_top(menu_size.y);
     m_field_window.draw();
 
+    m_video_window.set_top(menu_size.y);
+    m_video_window.draw();
+
     if (m_debug)
         ImGui::ShowDemoWindow(&m_debug);
 
@@ -315,7 +319,10 @@ void main_window::draw() {
         m_log.Draw("Log", &m_open_log_window);
     }
     if (m_render_fps) {
-        ImGui::SetNextWindowPos(ImVec2(size.x - 80, 20.0f));
+        auto pos = ImGui::GetMainViewport()->WorkPos;
+        pos.x += (size.x - 80);
+        pos.y += 20.0f;
+        ImGui::SetNextWindowPos(pos);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -383,6 +390,7 @@ bool main_window::change_font(const char *name) {
         m_fonts[name] = font;
         io.FontDefault = font;
         m_current_font = name;
+        add_big_font();
         return true;
     }
     auto path = path_iter->second;
@@ -401,6 +409,7 @@ bool main_window::change_font(const char *name) {
     m_fonts[name] = font;
     io.FontDefault = font;
     m_current_font = name;
+    add_big_font();
     m_needs_rebuild_font = true;
     return true;
 }
@@ -419,5 +428,13 @@ bool main_window::needs_rebuild_font() {
         return true;
     }
     return false;
+}
+
+void main_window::add_big_font() {
+    ImGuiIO& io = ImGui::GetIO();
+    ImFontConfig config{};
+    config.SizePixels = 24;
+    m_big_font = io.Fonts->AddFontDefault(&config);
+    m_video_window.set_font(m_big_font);
 }
 
