@@ -20,4 +20,4 @@ target_link_libraries(${PROJECT_NAME} D3D11 ap4 avcodec avformat avutil swscale)
 target_sources(${PROJECT_NAME} PRIVATE ../data/MP4Viewer.rc)
 
 install(TARGETS ${PROJECT_NAME}
-        RUNTIME DESTINATION "bin" COMPONENT applications)
+        RUNTIME DESTINATION "/" COMPONENT applications)
