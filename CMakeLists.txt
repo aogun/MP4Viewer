@@ -30,9 +30,11 @@ set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md") # TODO: Wher
 
 if(WIN32)
     # Include all dynamically linked runtime libraries such as MSVCRxxx.dll
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "./")
     include(InstallRequiredSystemLibraries)
     set(CPACK_PACKAGE_FILE_NAME ${PROJECT_NAME}-${PROJECT_VERSION})
     set(CPACK_GENERATOR ZIP)
 endif()
 
 include(CPack)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/deps/ffmpeg/bin/ DESTINATION "/")
