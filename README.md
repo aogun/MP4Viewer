@@ -23,6 +23,7 @@ This program uses the following external opensource project.
 - ImGui(https://github.com/ocornut/imgui)
 - imgui_club(https://github.com/ocornut/imgui_club)
 - drag and drop file on Win32, thanks to johanwendin(https://github.com/ocornut/imgui/issues/2602)
+- FFmpeg, integrate binary library from https://github.com/BtbN/FFmpeg-Builds
 
 ### License  
 Distributed under the GPL License. See LICENSE for more information.  
