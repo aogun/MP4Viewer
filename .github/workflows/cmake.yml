@@ -49,7 +49,7 @@ jobs:
       
       - name: Pack
         working-directory: build
-        shell: pwsh
+        shell: bash
         run: cmake --build . --target package --config $BUILD_TYPE
 
       - name: Artifact Upload
