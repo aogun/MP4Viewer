@@ -223,6 +223,8 @@ void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom,
         }
         case ATOM_TYPE_HVCC:{
             if (codec) codec->m_type = MP4_CODEC_HEVC;
+            codec->m_codec_data = std::make_shared<mp4_buffer>(nullptr, 0, false);
+            codec->m_nalu_length_size = 4;
             break;
         }
         case ATOM_TYPE_TRAK:{
