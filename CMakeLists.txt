@@ -15,7 +15,17 @@ project(MP4Viewer VERSION ${ver_major}.${ver_minor}.${ver_patch})
 set(CMAKE_CXX_STANDARD 17)
 
 set(BUILD_APPS OFF)
-
+set(CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        )
+foreach(CompilerFlag ${CompilerFlags})
+    string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+endforeach()
 add_subdirectory(deps)
 add_subdirectory(src)
 
