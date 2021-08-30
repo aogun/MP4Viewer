@@ -58,6 +58,7 @@ private:
     std::condition_variable m_cond;
 
     SwsContext * m_sws_context = nullptr;
+    float m_framerate = 0;
 };
 
 

@@ -3,7 +3,19 @@
 //
 
 #include "video_window.h"
+const char * time_code_str(uint32_t time_code) {
+    static char sz[64];
+    if (time_code == -1) return "N/A";
 
+    auto sec = time_code >> 8;
+    auto hour = sec / 3600;
+    auto minute = (sec - (hour * 3600)) / 60;
+    sec = sec % 60;
+    auto frame = time_code & 0xFF;
+    snprintf(sz, sizeof(sz) - 1,
+             "%02d:%02d:%02d %03d", hour, minute, sec, frame);
+    return sz;
+}
 video_window::video_window(mp4_manager *manager) {
     m_manager = manager;
 
@@ -74,6 +86,7 @@ void video_window::draw() {
                     break;
                 }
                 m_texture = std::make_shared<mp4_texture>(texture, frame->width, frame->height);
+                m_texture->time_code = frame->time_code;
                 m_needs_flush = false;
                 m_info = "OK";
             }
@@ -101,6 +114,10 @@ void video_window::draw() {
         if (!m_task->m_info.empty()) {
             ImGui::Text("Video width:%d, height:%d", m_texture->width,
                         m_texture->height);
+            if (m_texture->time_code >= 0) {
+                ImGui::SameLine();
+                ImGui::Text(" time code:%s", time_code_str(m_texture->time_code));
+            }
             ImGui::SameLine();
             ImGui::Text(" Debug info:%s", m_task->m_info.c_str());
             height -= ImGui::GetTextLineHeight();

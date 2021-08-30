@@ -243,6 +243,14 @@ void mp4_avdec::decode_loop() {
                 }
                 task->m_error = m_error;
             } else {
+                if (context->framerate.den > 0) {
+                    auto framerate = context->framerate.num * 1.0 / context->framerate.den;
+                    if (framerate > 0) {
+                        MM_LOG_INFO("framerate set to %0.2f(%d/%d)",
+                                    framerate, context->framerate.num, context->framerate.den);
+                        m_framerate = framerate;
+                    }
+                }
                 MM_LOG_INFO("process last frame");
                 task->output_frame = create_rgb_frame(last_frame);
                 task->m_state = DECODE_STATE_FINISHED;
@@ -282,11 +290,11 @@ std::shared_ptr<video_frame> mp4_avdec::create_frame(AVFrame *av_frame) {
     offset += y_size / 4;
     memcpy(data + offset, buf3->data, y_size / 4);
 
-    {
-        auto f = fopen("e:\\temp\\raw.i420", "wb");
-        fwrite(data, 1, size, f);
-        fclose(f);
-    }
+//    {
+//        auto f = fopen("e:\\temp\\raw.i420", "wb");
+//        fwrite(data, 1, size, f);
+//        fclose(f);
+//    }
     frame->data = std::make_shared<mp4_buffer>(data, size, false);
     frame->format = MP4_RAW_I420;
     return frame;
@@ -311,10 +319,30 @@ std::shared_ptr<video_frame> mp4_avdec::create_rgb_frame(AVFrame *av_frame) {
     frame->width = av_frame->width;
     frame->height = av_frame->height;
 
-    {
-        auto f = fopen("e:\\temp\\raw.rgba", "wb");
-        fwrite(data, 1, num_bytes, f);
-        fclose(f);
+//    {
+//        auto f = fopen("e:\\temp\\raw.rgba", "wb");
+//        fwrite(data, 1, num_bytes, f);
+//        fclose(f);
+//    }
+    if (av_frame->side_data) {
+        for (auto i = 0; i < av_frame->nb_side_data; i ++) {
+            if (av_frame->side_data[i]->type == AV_FRAME_DATA_S12M_TIMECODE) {
+                auto timecode = ((uint32_t*)(av_frame->side_data[i]->data))[1];
+                uint32_t sec = (timecode & 0xF) * 3600 + ((timecode >> 4) & 0x3) * 36000 + ((timecode >> 8) & 0xF) * 60 +
+                               ((timecode >> 12) & 0x7) * 600 + ((timecode >> 16) & 0xF) + ((timecode >> 20) & 0x7) * 10;
+                uint8_t frame_index = ((timecode >> 24) & 0xF) + ((timecode >> 28) & 0x3) * 10;
+                if (m_framerate > 30) {
+                    frame_index *= 2;
+                    if (abs(m_framerate - 50) < 0.5) {
+                        frame_index += ((timecode >> 7) & 0x1);
+                    } else {
+                        frame_index += ((timecode >> 23) & 0x1);
+                    }
+                }
+                frame->time_code = (sec << 8) | frame_index;
+                MM_LOG_INFO("set time code to %lld", frame->time_code);
+            }
+        }
     }
     frame->data = std::make_shared<mp4_buffer>(data, num_bytes, false);
     frame->format = MP4_RAW_R8G8B8A8;

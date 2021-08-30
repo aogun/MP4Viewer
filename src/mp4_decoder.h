@@ -35,6 +35,7 @@ public:
     uint32_t height = 0;
 
     mp4_raw_type_t format = MP4_RAW_UNKNOWN;
+    int64_t time_code = -1;
 };
 
 using frame_pos_vector_t=std::shared_ptr<std::vector<frame_position_t>>;

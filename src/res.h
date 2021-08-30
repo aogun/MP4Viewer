@@ -49,6 +49,7 @@ public:
     void * texture = nullptr;
     int width = 0;
     int height = 0;
+    int64_t time_code = -1;
 };
 
 #endif //MP4VIEWER_RES_H
