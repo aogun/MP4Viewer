@@ -94,13 +94,31 @@ public:
             for (UINT i = 0; i < file_count; i++)
             {
                 TCHAR szFile[MAX_PATH];
+                TCHAR szFileUTF8[MAX_PATH];
                 UINT cch = DragQueryFile(hdrop, i, szFile, MAX_PATH);
                 if (cch > 0 && cch < MAX_PATH)
                 {
                     MM_LOG_INFO("Drop file %s", szFile);
+                    int convertResult = MultiByteToWideChar(CP_ACP, 0, szFile,
+                                                            (int)strlen(szFile),
+                                                            NULL, 0);
+                    if (convertResult <= 0)
+                    {
+                        MM_LOG_ERROR("MultiByteToWideChar failed, exception:%x",
+                                     GetLastError());
+                        continue;
+                    }
+                    ::std::wstring wideWhat;
+                    wideWhat.resize(convertResult + 10);
+                    MultiByteToWideChar(CP_ACP, 0, szFile,
+                                        (int)strlen(szFile),
+                                        &wideWhat[0],
+                                        (int)wideWhat.size());
+                    WideCharToMultiByte(CP_UTF8, 0, &wideWhat[0], wideWhat.size(),
+                                        szFileUTF8, MAX_PATH, NULL, NULL);
                     // szFile contains the full path to the file, do something useful with it
                     // i.e. add it to a vector or something
-                    m_mgr->open(szFile);
+                    m_mgr->open(szFileUTF8);
                 }
             }
 
