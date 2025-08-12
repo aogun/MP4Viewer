@@ -116,6 +116,7 @@ int main(int, char**)
 #else
     mm_log_init(add_log);
 #endif
+    MM_LOG_INFO("start mp4viewer");
     setlocale(LC_ALL, "en_US.utf8");
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();

@@ -9,7 +9,7 @@
 #include "atom_obj.h"
 #include "mm_log.h"
 #include "common.h"
-
+class mp4_file;
 class my_inspect : public AP4_AtomInspector {
 public:
     explicit my_inspect();
@@ -38,9 +38,9 @@ public:
 
     std::vector<std::shared_ptr<atom_obj>> * atoms() { return &m_atoms; }
 
-    void Finished();
+    void Finished(mp4_file * file);
 private:
-    void process_atom(std::shared_ptr<atom_obj> &atom, std::shared_ptr<mp4_codec_info> codec);
+    void process_atom(std::shared_ptr<atom_obj> &atom, mp4_file * file, std::shared_ptr<mp4_codec_info> codec);
     void process_stsz(std::shared_ptr<atom_obj> &atom, std::shared_ptr<mp4_codec_info> codec);
     std::vector<std::shared_ptr<atom_obj>> m_atoms;
     std::shared_ptr<atom_obj> m_current;

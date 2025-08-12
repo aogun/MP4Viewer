@@ -27,6 +27,7 @@ class atom_field {
 public:
     atom_field(const char * name, const char * value);
     atom_field(const char * name, float value);
+    atom_field(const char * name, int16_t value);
     atom_field(const char * name, uint64_t value);
     atom_field(const char * name, const uint8_t *value, uint32_t size);
 

@@ -44,7 +44,7 @@ bool mp4_file::open(const char *path) {
     if (input) input->Release();
     m_name = path;
     m_short_name = std::filesystem::path(path).filename().string();
-    m_inspect->Finished();
+    m_inspect->Finished(this);
     return true;
 }
 

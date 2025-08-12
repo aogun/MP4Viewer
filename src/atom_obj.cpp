@@ -205,6 +205,13 @@ atom_field::atom_field(const char *name, float value) {
     m_value = sz;
 }
 
+atom_field::atom_field(const char * name, int16_t value) {
+    if (name) m_name = name;
+    char sz[64];
+    snprintf(sz, 64, "%ld", value);
+    m_value = sz;
+}
+
 atom_field::atom_field(const char *name, uint64_t value) {
     if (name) m_name = name;
     char sz[64];

@@ -65,6 +65,7 @@ public:
 };
 #define ATOM_TYPE_TRAK      GST_MAKE_FOURCC('t', 'r', 'a', 'k')
 #define ATOM_TYPE_STSZ      GST_MAKE_FOURCC('s', 't', 's', 'z')
+#define ATOM_TYPE_IN24      GST_MAKE_FOURCC('i', 'n', '2', '4')
 #define ATOM_TYPE_STSC      GST_MAKE_FOURCC('s', 't', 's', 'c')
 #define ATOM_TYPE_STCO      GST_MAKE_FOURCC('s', 't', 'c', 'o')
 #define ATOM_TYPE_STSS      GST_MAKE_FOURCC('s', 't', 's', 's')

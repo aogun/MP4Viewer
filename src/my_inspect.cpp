@@ -4,6 +4,8 @@
 
 #include "my_inspect.h"
 #include "common.h"
+#include "drag_file_win32.h"
+#include "mp4_file.h"
 
 static void
 AP4_MakePrefixString(unsigned int indent, char* prefix, AP4_Size size)
@@ -15,6 +17,15 @@ AP4_MakePrefixString(unsigned int indent, char* prefix, AP4_Size size)
     }
     prefix[indent] = '\0';
 }
+#define NTOHS(x) \
+    (uint16_t)((((uint16_t)(x) & 0x00FF) << 8) | \
+    (((uint16_t)(x) & 0xFF00) >> 8))
+
+#define NTOHL(x) \
+    (uint32_t)((((uint32_t)(x) & 0x000000FF) << 24) | \
+    (((uint32_t)(x) & 0x0000FF00) << 8)  | \
+    (((uint32_t)(x) & 0x00FF0000) >> 8)  | \
+    (((uint32_t)(x) & 0xFF000000) >> 24))
 
 my_inspect::my_inspect()
 {
@@ -45,8 +56,8 @@ my_inspect::StartAtom(const char* name,
     if (m_current) {
         m_current->add_atom(atom);
         atom->set_parent(m_current);
-//        MM_LOG_INFO("add %s to %s offset:%llu, size:%llu", name, m_current->get_name(),
-//                    offset, size);
+        MM_LOG_INFO("add %s to %s offset:%llu, size:%llu", name, m_current->get_name(),
+                    offset, size);
         m_current = atom;
     } else {
         m_atoms.push_back(atom);
@@ -172,19 +183,70 @@ void my_inspect::AddFieldArray(AP4_Size column_num, AP4_Size row_num,
     }
 }
 
-void my_inspect::Finished() {
+void my_inspect::Finished(mp4_file * file) {
     std::shared_ptr<mp4_codec_info> tmp;
     for (auto &atom : m_atoms) {
-        process_atom(atom, tmp);
+        process_atom(atom, file, tmp);
     }
 }
 
-void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom,
+void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom, mp4_file * file,
                               std::shared_ptr<mp4_codec_info> codec) {
     MM_LOG_INFO("process atom:%s, type:0x%x", atom->get_name(), atom->get_type());
     switch (atom->get_type()) {
         case ATOM_TYPE_STSZ:{
             process_stsz(atom, codec);
+            break;
+        }
+        case ATOM_TYPE_IN24:{
+            auto offset = atom->get_offset();
+            auto handle = file->get_handle();
+            auto size = atom->get_size();
+            if (!handle || size <= 0) {
+                break;
+            }
+            auto current = ftell(handle);
+            if (current < 0) {
+                MM_LOG_ERROR("get file position failed");
+                break;
+            }
+            if (fseek(handle, offset, SEEK_SET) != 0) {
+                MM_LOG_ERROR("seek to %llu failed", offset);
+                break;
+            }
+            auto data = new uint8_t[size];
+            if (fread(data, size, 1, handle) != 1) {
+                MM_LOG_ERROR("read atom data failed");
+                delete[] data;
+                break;
+            }
+            if (fseek(handle, current, SEEK_SET) != 0) {
+                MM_LOG_ERROR("seek to %llu failed", current);
+                delete[] data;
+                break;
+            }
+            auto p = (uint8_t *)data;
+            p += 16;
+            atom->add_field(std::make_shared<atom_field>("Version", (uint64_t)NTOHS(*(uint16_t*)p)));
+            p += 8;
+            atom->add_field(std::make_shared<atom_field>("channels", (uint64_t)NTOHS(*(uint16_t*)p)));
+            p += 2;
+            atom->add_field(std::make_shared<atom_field>("Sample size", (uint64_t)NTOHS(*(uint16_t*)p)));
+            p += 2;
+            atom->add_field(std::make_shared<atom_field>("Compression ID", (int16_t)NTOHS(*(int16_t*)p)));
+            p += 4;
+            atom->add_field(std::make_shared<atom_field>("Sample rate", (uint64_t)NTOHS(*(uint16_t*)p)));
+            p += 4;
+            atom->add_field(std::make_shared<atom_field>("Samples per packet", (uint64_t)NTOHL(*(uint32_t*)p)));
+            p += 4;
+            atom->add_field(std::make_shared<atom_field>("Bytes per packet", (uint64_t)NTOHL(*(uint32_t*)p)));
+            p += 4;
+            atom->add_field(std::make_shared<atom_field>("Bytes per frame", (uint64_t)NTOHL(*(uint32_t*)p)));
+            p += 4;
+            atom->add_field(std::make_shared<atom_field>("Bytes per sample", (uint64_t)NTOHL(*(uint32_t*)p)));
+            p += 4;
+
+            delete[] data;
             break;
         }
         case ATOM_TYPE_AVCC:{
@@ -231,7 +293,7 @@ void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom,
             auto info = std::make_shared<mp4_codec_info>();
             if (atom->has_atoms()) {
                 for (auto &sub_atom : *atom->atoms()) {
-                    process_atom(sub_atom, info);
+                    process_atom(sub_atom, file, info);
                 }
             }
             return;
@@ -242,7 +304,7 @@ void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom,
     }
     if (atom->has_atoms()) {
         for (auto &sub_atom : *atom->atoms()) {
-            process_atom(sub_atom, codec);
+            process_atom(sub_atom, file, codec);
         }
     }
 }
