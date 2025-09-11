@@ -72,5 +72,6 @@ public:
 #define ATOM_TYPE_CO64      GST_MAKE_FOURCC('c', 'o', '6', '4')
 #define ATOM_TYPE_AVCC      GST_MAKE_FOURCC('a', 'v', 'c', 'C')
 #define ATOM_TYPE_HVCC      GST_MAKE_FOURCC('h', 'v', 'c', 'C')
+#define ATOM_TYPE_TMCD      GST_MAKE_FOURCC('t', 'm', 'c', 'd')
 
 #endif //MP4VIEWER_COMMON_H

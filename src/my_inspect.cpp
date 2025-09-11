@@ -249,6 +249,74 @@ void my_inspect::process_atom(std::shared_ptr<atom_obj> &atom, mp4_file * file,
             delete[] data;
             break;
         }
+        case ATOM_TYPE_TMCD: {
+            auto offset = atom->get_offset();
+            auto handle = file->get_handle();
+            auto size = atom->get_size();
+            if (!handle || size <= 0) {
+                break;
+            }
+            auto current = ftell(handle);
+            if (current < 0) {
+                MM_LOG_ERROR("get file position failed");
+                break;
+            }
+            if (fseek(handle, offset, SEEK_SET) != 0) {
+                MM_LOG_ERROR("seek to %llu failed", offset);
+                break;
+            }
+            auto data = new uint8_t[size];
+            if (fread(data, size, 1, handle) != 1) {
+                MM_LOG_ERROR("read atom data failed");
+                delete[] data;
+                break;
+            }
+            if (fseek(handle, current, SEEK_SET) != 0) {
+                MM_LOG_ERROR("seek to %llu failed", current);
+                delete[] data;
+                break;
+            }
+            auto p = (uint8_t *)data;
+            // skip 4 bytes size, 4 bytes name, 1 bytes Version,
+            // 3 bytes flags, 4 bytes number of entries, 4 bytes reserved
+            p += 20;
+            auto flags = NTOHL(*(uint32_t*)p);
+            atom->add_field(std::make_shared<atom_field>("Flags", (uint64_t)flags));
+            std::string flag_str;
+            if (flags & 0x1) {
+                flag_str += "Drop Frame";
+            }
+            if (flags & 0x2) {
+                if (!flag_str.empty()) flag_str += ",";
+                flag_str += "24 Hour Max";
+            }
+            if (flags & 0x4) {
+                if (!flag_str.empty()) flag_str += ",";
+                flag_str += "Negative Times OK";
+            }
+            if (flags & 0x8) {
+                if (!flag_str.empty()) flag_str += ",";
+                flag_str += "Counter";
+            }
+            atom->add_field(std::make_shared<atom_field>("Flags(expand)", flag_str.c_str()));
+            p += 4;
+            auto timescale = NTOHL(*(uint32_t*)(p));
+            atom->add_field(std::make_shared<atom_field>("Time Scale", (uint64_t)timescale));
+            p += 4;
+            auto frame_duration = NTOHL(*(uint32_t*)(p));
+            atom->add_field(std::make_shared<atom_field>("Frame Duration", (uint64_t)frame_duration));
+            p += 4;
+            auto number_of_frames = *p;
+            atom->add_field(std::make_shared<atom_field>("Number of Frames", (uint64_t)number_of_frames));
+            p += 1;
+            if (timescale && frame_duration) {
+                float fps = (float)timescale / frame_duration;
+                atom->add_field(std::make_shared<atom_field>("Frame Rate", fps));
+            }
+            p += 3; // Reserved
+            delete[] data;
+            break;
+        }
         case ATOM_TYPE_AVCC:{
             if (codec) {
                 codec->m_type = MP4_CODEC_H264;

@@ -16,6 +16,7 @@
 #include "../data/resource.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "version.h"
 
 #ifndef CONSOLE_MODE
 #pragma comment(linker,"/subsystem:\"Windows\" /entry:\"mainCRTStartup\"")
@@ -123,11 +124,12 @@ int main(int, char**)
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr),
                       nullptr, nullptr, nullptr, nullptr, _T("MP4Viewer"), nullptr };
 
+    std::string title = string_format("MP4Viewer - %d.%d.%d", MP4_VIEWER_VERSION_MAJOR, MP4_VIEWER_VERSION_MINOR, MP4_VIEWER_VERSION_PATCH);
     HICON hIcon = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1));
     wc.hIcon = hIcon;
     wc.hIconSm = hIcon;
     ::RegisterClassEx(&wc);
-    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("MP4Viewer"), WS_OVERLAPPEDWINDOW, 100, 100, 1480, 960,
+    HWND hwnd = ::CreateWindow(wc.lpszClassName, title.c_str(), WS_OVERLAPPEDWINDOW, 100, 100, 1480, 960,
                                nullptr, nullptr, wc.hInstance, nullptr);
     g_hwnd = hwnd;
 //    SetWindowLong(hwnd, GWL_STYLE, 0);
